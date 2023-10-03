@@ -2,32 +2,36 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 describe("AlivelandERC721 Contract", () => {
-  it("It should mint NFT successfully", async () => {
-    const [owner] = await ethers.getSigners();
+  let myAlivelandERC721Deployed;
+  let owner;
 
-    const MyAlivelandERC721 = await ethers.deployContract("AlivelandERC721");
+  beforeEach(async ()=> {
+    const MyAlivelandERC721 = await ethers.getContractFactory("AlivelandERC721");
+    myAlivelandERC721Deployed = await MyAlivelandERC721.deploy(
+      "AliveLandNFT", 
+      "ALNFT", 
+      "https://ipfs.io/ipfs/QmXXzRSwSPs4DHLS7RDPRyG1GinjGVFv2fS5TdX3fW33FX/", 
+      "1", 
+      "0x3986faA59C28D082F3E6D61c5f52e1520d172205"
+    );
 
-    const ownerOldBalance = await MyAlivelandERC721.balanceOf(owner.address);
+    [owner] = await ethers.getSigners();
+  })
+
+  it("Should mint NFT successfully", async () => {
+    const ownerOldBalance = await myAlivelandERC721Deployed.balanceOf(owner.address);
     expect(ownerOldBalance).to.equal(0);
-    const mint = await MyAlivelandERC721.mint(owner.address);
-    const ownerNewBalance = await MyAlivelandERC721.balanceOf(owner.address);
-    expect(await MyAlivelandERC721.totalSupply()).to.equal(ownerNewBalance);
+
+    await myAlivelandERC721Deployed.mint(owner.address);
+    const ownerNewBalance = await myAlivelandERC721Deployed.balanceOf(owner.address);
+    expect(await myAlivelandERC721Deployed.totalSupply()).to.equal(ownerNewBalance);
     expect(ownerNewBalance).to.equal(1);
   });
 
-  it("It should pause NFT transfer successfully", async () => {
-    
-  });
+  it("Should send fee to the recipient successfully", async () => {
+    await myAlivelandERC721Deployed.mint(owner.address);
 
-  it("It should burn NFT successfully", async () => {
-    
-  });
-
-  it("It should update mintFee successfully", async () => {
-    
-  });
-
-  it("It should update feeRecipient successfully", async () => {
-    
+    let myBalance = await ethers.provider.getBalance("0x3986faA59C28D082F3E6D61c5f52e1520d172205");
+    expect(myBalance).to.equal(1);
   });
 });

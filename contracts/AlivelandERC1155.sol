@@ -12,23 +12,43 @@ contract AlivelandERC1155 is Context, AccessControlEnumerable, ERC1155Burnable, 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    constructor(string memory uri) ERC1155(uri) {
+    uint256 public _mintFee;
+    address payable public _feeRecipient;
+
+    constructor(
+        string memory uri,
+        uint256 mintFee,
+        address payable feeRecipient
+    ) ERC1155(uri) {
+        _mintFee = mintFee;
+        _feeRecipient = feeRecipient;
+
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
         _setupRole(MINTER_ROLE, _msgSender());
         _setupRole(PAUSER_ROLE, _msgSender());
     }
 
-    function mint(address to, uint256 id, uint256 amount, bytes memory data) public virtual {
+    function mint(address to, uint256 id, uint256 amount, bytes memory data) public payable virtual {
         require(hasRole(MINTER_ROLE, _msgSender()), "AlivelandERC1155: must have minter role to mint");
+        require(msg.value >= _mintFee, "AlivelandERC1155: insufficient funds to mint");
 
         _mint(to, id, amount, data);
+
+        (bool success,) = _feeRecipient.call{value : _mintFee}("");
+        require(success, "AlivelandERC1155: transfer failed");
     }
 
-    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) public virtual {
+    function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) public payable virtual {
         require(hasRole(MINTER_ROLE, _msgSender()), "AlivelandERC1155: must have minter role to mint");
 
+        uint256 fees = _mintFee * ids.length;
+        require(msg.value >= fees, "AlivelandERC1155: insufficient funds to mintBatch");
+
         _mintBatch(to, ids, amounts, data);
+
+        (bool success,) = _feeRecipient.call{value : fees}("");
+        require(success, "AlivelandERC1155: transfer failed to mintBatch");
     }
 
     function pause() public virtual {

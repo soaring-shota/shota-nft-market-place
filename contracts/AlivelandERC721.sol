@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract AlivelandERC721 is
     Context,
@@ -31,7 +30,7 @@ contract AlivelandERC721 is
 
     constructor(
         string memory name, 
-        string memory symbol, 
+        string memory symbol,
         string memory baseTokenURI,
         uint256 mintFee,
         address payable feeRecipient
