@@ -1,6 +1,7 @@
 /** @type import('hardhat/config').HardhatUserConfig */
 require('dotenv').config();
 require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-chai-matchers");
 
 const { POLYGON_API_URL, MUMBAI_API_URL, PRIVATE_KEY } = process.env;
 
