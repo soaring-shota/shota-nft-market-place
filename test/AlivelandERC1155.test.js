@@ -1,46 +1,66 @@
-const { ether } = require('@openzeppelin/test-helpers');
-
+const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { expect } = require("chai");
+const { ethers } = require("hardhat");
 
-const AlivelandERC1155 = artifacts.require('AlivelandERC1155');
+describe("Aliveland ERC-1155 NFT Contract", () => {
+  const mintFee = ethers.parseEther("1");
+  const mintFee2 = ethers.parseEther("2");
 
-const MINT_FEE = '1';
+  async function deployTokenFixture() {
+    const [owner, feeRecipient] = await ethers.getSigners();
 
-contract('Aliveland ERC-1155 NFT Contract', (owner, tokenURI, feeRecipient) => {
-  const mintFee = ether(MINT_FEE);
-
-  beforeEach(async () => {
-    AlivelandInstance = await AlivelandERC1155.new(
-      tokenURI,
-      mintFee,
-      feeRecipient
+    const AlivelandNFT = await ethers.deployContract(
+      "AlivelandERC1155",
+      [
+        "ipfs",
+        mintFee,
+        feeRecipient
+      ]
     );
+
+    return { AlivelandNFT, owner, feeRecipient };
+  }
+
+  it("Should mint & burn NFTs successfully", async () => {
+    const { AlivelandNFT, owner, feeRecipient } = await loadFixture(deployTokenFixture);
+
+    let nftBalance = await AlivelandNFT.balanceOf(owner.address, 1);
+    expect(nftBalance).to.equal(0);
+
+    await AlivelandNFT.mint(owner.address, 1, 3, new Uint8Array([]), { from: owner.address, value: mintFee });
+
+    nftBalance = await AlivelandNFT.balanceOf(owner.address, 1);
+    expect(nftBalance).to.equal(3);
+
+    await AlivelandNFT.burn(owner.address, 1, 3);
+
+    nftBalance = await AlivelandNFT.balanceOf(owner.address, 1);
+    expect(nftBalance).to.equal(0);
   });
 
-  describe("Minting NFT", () => {
-    it("Should mint NFTs successfully", async () => {
-      const ownerBalance = await AlivelandInstance.balanceOf(owner, 1);
-      expect(ownerBalance).to.equal(0);
-  
-      await AlivelandInstance.mint(owner, 1, 3, "", { from: owner });
-  
-      ownerBalance = await AlivelandInstance.balanceOf(owner, 1);
-      expect(await AlivelandInstance.totalSupply()).to.equal(ownerBalance);
-      expect(ownerBalance).to.equal(3);
-    });
-  
-    it("Should mint batched NFTs successfully", async () => {
-      const ownerBalance = await AlivelandInstance.balanceOf(owner, 1);
-      expect(ownerBalance).to.equal(0);
-      ownerBalance = await AlivelandInstance.balanceOf(owner, 2);    
-      expect(ownerBalance).to.equal(0);
-  
-      await AlivelandInstance.mintBatch(owner, [1, 2], [3, 4], "", { from: owner });
-  
-      ownerBalance = await AlivelandInstance.balanceOf(owner, 1);
-      expect(ownerBalance).to.equal(3);
-      ownerBalance = await AlivelandInstance.balanceOf(owner, 2);
-      expect(ownerBalance).to.equal(4);
-    });
+  it("Should batch mint & burn NFTs successfully", async () => {
+    const { AlivelandNFT, owner, feeRecipient } = await loadFixture(deployTokenFixture);
+
+    let nftBalance = await AlivelandNFT.balanceOfBatch(
+      [owner.address, owner.address], 
+      [1, 2]
+    );
+    expect(nftBalance.toString()).to.equal("0,0");
+
+    await AlivelandNFT.mintBatch(owner.address, [1, 2], [3, 4], new Uint8Array([]), { from: owner.address, value: mintFee2 });
+
+    nftBalance = await AlivelandNFT.balanceOfBatch(
+      [owner.address, owner.address], 
+      [1, 2]
+    );
+    expect(nftBalance.toString()).to.equal("3,4");
+
+    await AlivelandNFT.burnBatch(owner.address, [1, 2], [3, 4]);
+
+    nftBalance = await AlivelandNFT.balanceOfBatch(
+      [owner.address, owner.address], 
+      [1, 2]
+    );
+    expect(nftBalance.toString()).to.equal("0,0");
   });
 });

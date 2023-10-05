@@ -4,6 +4,10 @@
   "description": "aliveland NFT marketplace smart contract",
   "main": "index.js",
   "scripts": {
+    "compile": "npx hardhat compile",
+    "unit-test": "npx hardhat test",
+    "deploy-mumbai": "npx hardhat run --network mumbai scripts/deploy_all.js",
+    "deploy-polygon": "npx hardhat run --network polygon scripts/deploy_all.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
