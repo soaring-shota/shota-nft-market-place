@@ -4,6 +4,10 @@
   "description": "aliveland NFT marketplace smart contract",
   "main": "index.js",
   "scripts": {
+    "compile": "npx hardhat compile",
+    "unit-test": "npx hardhat test",
+    "deploy-mumbai": "npx hardhat run --network mumbai scripts/deploy_all.js",
+    "deploy-polygon": "npx hardhat run --network polygon scripts/deploy_all.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -17,10 +21,18 @@
   },
   "homepage": "https://github.com/aliveland/aliveland-nft-contract#readme",
   "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "@openzeppelin/contracts": "^4.9.3",
+    "@openzeppelin/contracts-upgradeable": "^4.9.3",
+    "@openzeppelin/hardhat-upgrades": "^2.2.1",
+    "@openzeppelin/test-helpers": "^0.5.16",
+    "chai": "^4.3.10",
+    "ethers": "^6.7.1",
     "hardhat": "^2.17.3"
   },
   "dependencies": {
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "web3": "^4.1.2"
   }
 }
