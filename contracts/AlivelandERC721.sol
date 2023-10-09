@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract AlivelandERC721 is
     Context,
@@ -18,7 +19,8 @@ contract AlivelandERC721 is
     ERC721Enumerable,
     ERC721URIStorage,
     ERC721Burnable,
-    ERC721Pausable
+    ERC721Pausable,
+    Ownable
 {
     using Counters for Counters.Counter;
     using Strings for uint256;
@@ -28,25 +30,43 @@ contract AlivelandERC721 is
 
     Counters.Counter private tokenIdTracker;
 
+    address auction;
+    address marketplace;
     string private baseTokenURI;
     uint256 public mintFee;
     address payable public feeRecipient;
+    address private contractOwner;
     string public baseExtension = ".json";
     
     mapping(uint256 => address) private owners;
     mapping(address => uint256) private balances;
     mapping(uint256 => address) private tokenApprovals;
 
+    event UpdateMintFee(
+        uint256 mintFee
+    );
+    event UpdateFeeRecipient(
+        address payable feeRecipient
+    );
+
     constructor(
         string memory _name, 
         string memory _symbol,
+        address _auction,
+        address _marketplace,
         string memory _baseTokenURI,
         uint256 _mintFee,
-        address payable _feeRecipient
+        address payable _feeRecipient,
+        address _deployer
     ) ERC721(_name, _symbol) {
+        auction = _auction;
+        marketplace = _marketplace;
         baseTokenURI = _baseTokenURI;
         mintFee = _mintFee;
         feeRecipient = _feeRecipient;
+        contractOwner = _deployer;
+
+        super._transferOwnership(contractOwner);
 
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
 
@@ -54,8 +74,19 @@ contract AlivelandERC721 is
         _setupRole(PAUSER_ROLE, _msgSender());
     }
 
-    function _baseURI() internal view virtual override returns (string memory) {
-        return baseTokenURI;
+    modifier onlyContractOwner() {
+        require(msg.sender == contractOwner, "AlivelandERC721: Only the owner can call this function");
+        _;
+    }
+
+    function updateMintFee(uint256 _mintFee) external onlyContractOwner {
+        mintFee = _mintFee;
+        emit UpdateMintFee(_mintFee);
+    }
+
+    function updateFeeRecipient(address payable _feeRecipient) external onlyContractOwner {
+        feeRecipient = _feeRecipient;
+        emit UpdateFeeRecipient(_feeRecipient);
     }
     
     function tokenURI(uint256 _tokenId) public view virtual override(ERC721, ERC721URIStorage) returns (string memory) {
@@ -93,6 +124,22 @@ contract AlivelandERC721 is
         ERC721._burn(_tokenId);
     }
 
+    function pause() public virtual {
+        require(hasRole(PAUSER_ROLE, _msgSender()), "AlivelandERC721: must have pauser role to pause");
+        _pause();
+    }
+
+    function unpause() public virtual {
+        require(hasRole(PAUSER_ROLE, _msgSender()), "AlivelandERC721: must have pauser role to unpause");
+        _unpause();
+    }
+
+    function supportsInterface(
+        bytes4 _interfaceId
+    ) public view virtual override(AccessControlEnumerable, ERC721, ERC721Enumerable, ERC721URIStorage) returns (bool) {
+        return super.supportsInterface(_interfaceId);
+    }
+
     function _burn(uint256 _tokenId) internal virtual override(ERC721, ERC721URIStorage) {
         address owner_ = ERC721.ownerOf(_tokenId);
 
@@ -116,14 +163,8 @@ contract AlivelandERC721 is
         _afterTokenTransfer(owner_, address(0), _tokenId, 1);
     }
 
-    function pause() public virtual {
-        require(hasRole(PAUSER_ROLE, _msgSender()), "AlivelandERC721: must have pauser role to pause");
-        _pause();
-    }
-
-    function unpause() public virtual {
-        require(hasRole(PAUSER_ROLE, _msgSender()), "AlivelandERC721: must have pauser role to unpause");
-        _unpause();
+    function _baseURI() internal view virtual override returns (string memory) {
+        return baseTokenURI;
     }
 
     function _beforeTokenTransfer(
@@ -133,11 +174,5 @@ contract AlivelandERC721 is
         uint256 _batchSize
     ) internal virtual override(ERC721, ERC721Enumerable, ERC721Pausable) {
         super._beforeTokenTransfer(_from, _to, _firstTokenId, _batchSize);
-    }
-
-    function supportsInterface(
-        bytes4 _interfaceId
-    ) public view virtual override(AccessControlEnumerable, ERC721, ERC721Enumerable, ERC721URIStorage) returns (bool) {
-        return super.supportsInterface(_interfaceId);
     }
 }

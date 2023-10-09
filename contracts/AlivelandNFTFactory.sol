@@ -7,31 +7,35 @@ import "./AlivelandERC721.sol";
 import "./AlivelandERC1155.sol";
 
 contract AlivelandNFTFactory is Ownable {
-   
-    event ContractCreated(address creator, address nft);
-
     address public auction;
     address public marketplace;
+    string public baseURI;
     uint256 public mintFee;
     uint256 public platformFee;
-    string public baseURI;
     address payable public feeRecipient;
+
+    bytes4 private constant INTERFACE_ID_ERC721 = 0x80ac58cd;
+    bytes4 private constant INTERFACE_ID_ERC1155 = 0xd9b67a26;
+    
     mapping(address => bool) public exists;
+    
+    event ContractCreated(address creator, address nft);
+    event ContractDisabled(address caller, address nft);
 
     constructor(
         address _auction,
         address _marketplace,
         string memory _baseURI,
         uint256 _mintFee,
-        address payable _feeRecipient,
-        uint256 _platformFee
+        uint256 _platformFee,
+        address payable _feeRecipient
     ) public {
         auction = _auction;
         marketplace = _marketplace;
         baseURI = _baseURI;
         mintFee = _mintFee;
-        feeRecipient = _feeRecipient;
         platformFee = _platformFee;
+        feeRecipient = _feeRecipient;
     }
 
     function updateAuction(address _auction) external onlyOwner {
@@ -69,9 +73,12 @@ contract AlivelandNFTFactory is Ownable {
         AlivelandERC721 nft = new AlivelandERC721(
             _name,
             _symbol,
+            auction,
+            marketplace,
             baseURI,
             mintFee,
-            feeRecipient
+            feeRecipient,
+            msg.sender
         );
         exists[address(nft)] = true;
         emit ContractCreated(_msgSender(), address(nft));
@@ -90,10 +97,40 @@ contract AlivelandNFTFactory is Ownable {
         AlivelandERC1155 nft = new AlivelandERC1155(
             baseURI,
             mintFee,
-            feeRecipient
+            feeRecipient,
+            msg.sender
         );
         exists[address(nft)] = true;
         emit ContractCreated(_msgSender(), address(nft));
         return address(nft);
+    }
+
+    function registerERC721Contract(address _tokenContractAddress)
+        external
+        onlyOwner
+    {
+        require(!exists[_tokenContractAddress], "AlivelandERC721 contract already registered");
+        require(IERC165(_tokenContractAddress).supportsInterface(INTERFACE_ID_ERC721), "Not an ERC721 contract");
+        exists[_tokenContractAddress] = true;
+        emit ContractCreated(_msgSender(), _tokenContractAddress);
+    }
+
+    function registerERC1155Contract(address _tokenContractAddress)
+        external
+        onlyOwner
+    {
+        require(!exists[_tokenContractAddress], "AlivelandERC1155 contract already registered");
+        require(IERC165(_tokenContractAddress).supportsInterface(INTERFACE_ID_ERC1155), "Not an ERC1155 contract");
+        exists[_tokenContractAddress] = true;
+        emit ContractCreated(_msgSender(), _tokenContractAddress);
+    }
+
+    function disableTokenContract(address _tokenContractAddress)
+        external
+        onlyOwner
+    {
+        require(exists[_tokenContractAddress], "AlivelandNFT contract is not registered");
+        exists[_tokenContractAddress] = false;
+        emit ContractDisabled(_msgSender(), _tokenContractAddress);
     }
 }
