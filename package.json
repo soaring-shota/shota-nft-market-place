@@ -8,6 +8,7 @@
     "unit-test": "npx hardhat test",
     "deploy-mumbai": "npx hardhat run --network mumbai scripts/deploy_all.js",
     "deploy-polygon": "npx hardhat run --network polygon scripts/deploy_all.js",
+    "verify": "npx hardhat verify --network mumbai --constructor-args scripts/arguments_1155.js 0x943fCF0E1D50c69F88d255058eB63D861e9EA139",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -26,6 +27,7 @@
     "@nomicfoundation/hardhat-network-helpers": "^1.0.9",
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "@nomicfoundation/hardhat-verify": "^1.1.1",
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
     "@openzeppelin/contracts": "^4.9.3",
     "@openzeppelin/contracts-upgradeable": "^4.9.3",
     "@openzeppelin/hardhat-upgrades": "^2.2.1",

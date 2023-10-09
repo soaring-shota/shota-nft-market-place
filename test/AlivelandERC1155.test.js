@@ -4,7 +4,8 @@ const { ethers } = require("hardhat");
 
 describe("Aliveland ERC-1155 NFT Contract", () => {
   const mintFee = ethers.parseEther("1");
-  const mintFee2 = ethers.parseEther("2");
+  const mintFee3 = ethers.parseEther("3");
+  const mintFee7 = ethers.parseEther("7");
 
   async function deployTokenFixture() {
     const [owner, feeRecipient] = await ethers.getSigners();
@@ -27,7 +28,7 @@ describe("Aliveland ERC-1155 NFT Contract", () => {
     let nftBalance = await AlivelandNFT.balanceOf(owner.address, 1);
     expect(nftBalance).to.equal(0);
 
-    await AlivelandNFT.mint(owner.address, 1, 3, new Uint8Array([]), { from: owner.address, value: mintFee });
+    await AlivelandNFT.mint(owner.address, 1, 3, "", { from: owner.address, value: mintFee3 });
 
     nftBalance = await AlivelandNFT.balanceOf(owner.address, 1);
     expect(nftBalance).to.equal(3);
@@ -47,7 +48,7 @@ describe("Aliveland ERC-1155 NFT Contract", () => {
     );
     expect(nftBalance.toString()).to.equal("0,0");
 
-    await AlivelandNFT.mintBatch(owner.address, [1, 2], [3, 4], new Uint8Array([]), { from: owner.address, value: mintFee2 });
+    await AlivelandNFT.mintBatch(owner.address, [1, 2], [3, 4], "", { from: owner.address, value: mintFee7 });
 
     nftBalance = await AlivelandNFT.balanceOfBatch(
       [owner.address, owner.address], 
