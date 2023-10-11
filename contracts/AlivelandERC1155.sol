@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
@@ -14,8 +14,8 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     uint256 public mintFee;
+    string public baseTokenURI;
     address payable public feeRecipient;
-    address private contractOwner;
     
     constructor(
         string memory _uri,
@@ -24,20 +24,19 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
         address _deployer
     ) ERC1155(_uri) {
         mintFee = _mintFee;
+        baseTokenURI = _uri;
         feeRecipient = _feeRecipient;
-        contractOwner = _deployer;
 
-        super._transferOwnership(contractOwner);
+        super._transferOwnership(_deployer);
 
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        _setupRole(MINTER_ROLE, _msgSender());
-        _setupRole(PAUSER_ROLE, _msgSender());
+        _setupRole(DEFAULT_ADMIN_ROLE, _deployer);
+        _setupRole(MINTER_ROLE, _deployer);
+        _setupRole(PAUSER_ROLE, _deployer);
     }
 
-    function uri(uint256 _tokenId) override public pure returns (string memory) {
+    function uri(uint256 _tokenId) override public view returns (string memory) {
         return string(
-            abi.encodePacked("https://ipfs.io/ipfs/QmXXzRSwSPs4DHLS7RDPRyG1GinjGVFv2fS5TdX3fW33FX/", 
-            Strings.toString(_tokenId + 5010), ".json")
+            abi.encodePacked(baseTokenURI, Strings.toString(_tokenId), ".json")
         );
     }
 

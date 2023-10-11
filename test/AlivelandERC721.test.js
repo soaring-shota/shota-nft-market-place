@@ -7,16 +7,19 @@ describe("Aliveland ERC-721 NFT Contract", () => {
   const mintFee = ethers.parseEther("1");
 
   async function deployTokenFixture() {
-    const [owner, feeRecipient] = await ethers.getSigners();
+    const [owner, feeRecipient, auction, marketplace] = await ethers.getSigners();
 
     const AlivelandNFT = await ethers.deployContract(
       "AlivelandERC721", 
       [
         "Aliveland NFT",
         "ALNFT",
+        auction,
+        marketplace,
         "ipfs",
         mintFee,
-        feeRecipient
+        feeRecipient.address,
+        owner
       ]
     );
                                                                       

@@ -15,7 +15,8 @@ describe("Aliveland ERC-1155 NFT Contract", () => {
       [
         "ipfs",
         mintFee,
-        feeRecipient
+        feeRecipient.address,
+        owner
       ]
     );
 
@@ -28,7 +29,7 @@ describe("Aliveland ERC-1155 NFT Contract", () => {
     let nftBalance = await AlivelandNFT.balanceOf(owner.address, 1);
     expect(nftBalance).to.equal(0);
 
-    await AlivelandNFT.mint(owner.address, 1, 3, "", { from: owner.address, value: mintFee3 });
+    await AlivelandNFT.mint(owner.address, 1, 3, new Uint8Array([]), { from: owner.address, value: mintFee3 });
 
     nftBalance = await AlivelandNFT.balanceOf(owner.address, 1);
     expect(nftBalance).to.equal(3);
@@ -48,7 +49,7 @@ describe("Aliveland ERC-1155 NFT Contract", () => {
     );
     expect(nftBalance.toString()).to.equal("0,0");
 
-    await AlivelandNFT.mintBatch(owner.address, [1, 2], [3, 4], "", { from: owner.address, value: mintFee7 });
+    await AlivelandNFT.mintBatch(owner.address, [1, 2], [3, 4], new Uint8Array([]), { from: owner.address, value: mintFee7 });
 
     nftBalance = await AlivelandNFT.balanceOfBatch(
       [owner.address, owner.address], 

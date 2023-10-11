@@ -8,7 +8,7 @@
     "unit-test": "npx hardhat test",
     "deploy-mumbai": "npx hardhat run --network mumbai scripts/deploy_all.js",
     "deploy-polygon": "npx hardhat run --network polygon scripts/deploy_all.js",
-    "verify": "npx hardhat verify --network mumbai --constructor-args scripts/arguments_1155.js 0x943fCF0E1D50c69F88d255058eB63D861e9EA139",
+    "verify": "npx hardhat verify --network mumbai --constructor-args scripts/arguments_1155.js 0xC7a7ADE3b82BfAfe59bCeDD9D358F7e758241F19",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

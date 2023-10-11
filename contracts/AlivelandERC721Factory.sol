@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./AlivelandERC721.sol";
-import "./AlivelandERC1155.sol";
 
-contract AlivelandNFTFactory is Ownable {
+contract AlivelandERC721Factory is Ownable {
     address public auction;
     address public marketplace;
     string public baseURI;
@@ -15,7 +14,6 @@ contract AlivelandNFTFactory is Ownable {
     address payable public feeRecipient;
 
     bytes4 private constant INTERFACE_ID_ERC721 = 0x80ac58cd;
-    bytes4 private constant INTERFACE_ID_ERC1155 = 0xd9b67a26;
     
     mapping(address => bool) public exists;
     
@@ -29,7 +27,7 @@ contract AlivelandNFTFactory is Ownable {
         uint256 _mintFee,
         uint256 _platformFee,
         address payable _feeRecipient
-    ) public {
+    ) {
         auction = _auction;
         marketplace = _marketplace;
         baseURI = _baseURI;
@@ -61,7 +59,7 @@ contract AlivelandNFTFactory is Ownable {
         feeRecipient = _feeRecipient;
     }
 
-    function createERC721Contract(string memory _name, string memory _symbol)
+    function createNFTContract(string memory _name, string memory _symbol)
         external
         payable
         returns (address)
@@ -85,42 +83,12 @@ contract AlivelandNFTFactory is Ownable {
         return address(nft);
     }
 
-    function createERC1155Contract()
-        external
-        payable
-        returns (address)
-    {
-        require(msg.value >= platformFee, "Insufficient funds.");
-        (bool success_,) = feeRecipient.call{value: msg.value}("");
-        require(success_, "Transfer failed");
-
-        AlivelandERC1155 nft = new AlivelandERC1155(
-            baseURI,
-            mintFee,
-            feeRecipient,
-            msg.sender
-        );
-        exists[address(nft)] = true;
-        emit ContractCreated(_msgSender(), address(nft));
-        return address(nft);
-    }
-
     function registerERC721Contract(address _tokenContractAddress)
         external
         onlyOwner
     {
         require(!exists[_tokenContractAddress], "AlivelandERC721 contract already registered");
         require(IERC165(_tokenContractAddress).supportsInterface(INTERFACE_ID_ERC721), "Not an ERC721 contract");
-        exists[_tokenContractAddress] = true;
-        emit ContractCreated(_msgSender(), _tokenContractAddress);
-    }
-
-    function registerERC1155Contract(address _tokenContractAddress)
-        external
-        onlyOwner
-    {
-        require(!exists[_tokenContractAddress], "AlivelandERC1155 contract already registered");
-        require(IERC165(_tokenContractAddress).supportsInterface(INTERFACE_ID_ERC1155), "Not an ERC1155 contract");
         exists[_tokenContractAddress] = true;
         emit ContractCreated(_msgSender(), _tokenContractAddress);
     }

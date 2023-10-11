@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { ethers }  = require("hardhat");
-const { BASE_URI, MINT_FEE, FEE_RECIPIENT } = process.env;
+const { BASE_URI, MINT_FEE, FEE_RECIPIENT, DEPLOYER_ADDRESS } = process.env;
 
 async function main() {
   const mintFee = ethers.parseEther(MINT_FEE);
@@ -9,11 +9,10 @@ async function main() {
   const AlivelandNFTContractDeployed = await AlivelandNFTContract.deploy(
     BASE_URI,
     mintFee,
-    FEE_RECIPIENT
+    FEE_RECIPIENT,
+    DEPLOYER_ADDRESS
   );
-
   await AlivelandNFTContractDeployed.waitForDeployment();
-
   console.log("deployed Aliveland NFT(erc-1155) contract address: ", AlivelandNFTContractDeployed.target);
 }
 

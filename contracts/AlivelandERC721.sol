@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
@@ -35,7 +35,6 @@ contract AlivelandERC721 is
     string private baseTokenURI;
     uint256 public mintFee;
     address payable public feeRecipient;
-    address private contractOwner;
     string public baseExtension = ".json";
     
     mapping(uint256 => address) private owners;
@@ -45,6 +44,7 @@ contract AlivelandERC721 is
     event UpdateMintFee(
         uint256 mintFee
     );
+
     event UpdateFeeRecipient(
         address payable feeRecipient
     );
@@ -64,27 +64,20 @@ contract AlivelandERC721 is
         baseTokenURI = _baseTokenURI;
         mintFee = _mintFee;
         feeRecipient = _feeRecipient;
-        contractOwner = _deployer;
 
-        super._transferOwnership(contractOwner);
+        super._transferOwnership(_deployer);
 
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-
-        _setupRole(MINTER_ROLE, _msgSender());
-        _setupRole(PAUSER_ROLE, _msgSender());
+        _setupRole(DEFAULT_ADMIN_ROLE, _deployer);
+        _setupRole(MINTER_ROLE, _deployer);
+        _setupRole(PAUSER_ROLE, _deployer);
     }
 
-    modifier onlyContractOwner() {
-        require(msg.sender == contractOwner, "AlivelandERC721: Only the owner can call this function");
-        _;
-    }
-
-    function updateMintFee(uint256 _mintFee) external onlyContractOwner {
+    function updateMintFee(uint256 _mintFee) external onlyOwner {
         mintFee = _mintFee;
         emit UpdateMintFee(_mintFee);
     }
 
-    function updateFeeRecipient(address payable _feeRecipient) external onlyContractOwner {
+    function updateFeeRecipient(address payable _feeRecipient) external onlyOwner {
         feeRecipient = _feeRecipient;
         emit UpdateFeeRecipient(_feeRecipient);
     }
@@ -93,10 +86,9 @@ contract AlivelandERC721 is
         _requireMinted(_tokenId);
 
         string memory base_ = _baseURI();
-        uint num_ = 5001 + _tokenId;
         
         if (bytes(base_).length > 0) {
-            return string(abi.encodePacked(base_, num_.toString(), baseExtension));
+            return string(abi.encodePacked(base_, _tokenId.toString(), baseExtension));
         }
 
         return super.tokenURI(_tokenId);
@@ -119,7 +111,6 @@ contract AlivelandERC721 is
     }
 
     function burn(uint256 _tokenId) public virtual override {
-        //solhint-disable-next-line max-line-length
         require(_isApprovedOrOwner(_msgSender(), _tokenId), "AlivelandERC721: caller is not token owner or approved");
         ERC721._burn(_tokenId);
     }
@@ -145,15 +136,11 @@ contract AlivelandERC721 is
 
         _beforeTokenTransfer(owner_, address(0), _tokenId, 1);
 
-        // Update ownership in case tokenId was transferred by `_beforeTokenTransfer` hook
         owner_ = ERC721.ownerOf(_tokenId);
 
-        // Clear approvals
         delete tokenApprovals[_tokenId];
 
         unchecked {
-            // Cannot overflow, as that would require more tokens to be burned/transferred
-            // out than the owner initially received through minting and transferring in.
             balances[owner_] -= 1;
         }
         delete owners[_tokenId];
