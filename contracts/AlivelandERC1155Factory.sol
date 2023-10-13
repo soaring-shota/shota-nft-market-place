@@ -58,8 +58,8 @@ contract AlivelandERC1155Factory is Ownable {
         returns (address)
     {
         require(msg.value >= platformFee, "Insufficient funds.");
-        (bool success_,) = feeRecipient.call{value: msg.value}("");
-        require(success_, "Transfer failed");
+        (bool success,) = feeRecipient.call{value: msg.value}("");
+        require(success, "Transfer failed");
 
         AlivelandERC1155 nft = new AlivelandERC1155(
             baseURI,

@@ -65,8 +65,8 @@ contract AlivelandERC721Factory is Ownable {
         returns (address)
     {
         require(msg.value >= platformFee, "Insufficient funds.");
-        (bool success_,) = feeRecipient.call{value: msg.value}("");
-        require(success_, "Transfer failed");
+        (bool success,) = feeRecipient.call{value: msg.value}("");
+        require(success, "Transfer failed");
 
         AlivelandERC721 nft = new AlivelandERC721(
             _name,

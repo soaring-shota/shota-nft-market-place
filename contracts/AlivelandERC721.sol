@@ -85,10 +85,10 @@ contract AlivelandERC721 is
     function tokenURI(uint256 _tokenId) public view virtual override(ERC721, ERC721URIStorage) returns (string memory) {
         _requireMinted(_tokenId);
 
-        string memory base_ = _baseURI();
+        string memory base = _baseURI();
         
-        if (bytes(base_).length > 0) {
-            return string(abi.encodePacked(base_, _tokenId.toString(), baseExtension));
+        if (bytes(base).length > 0) {
+            return string(abi.encodePacked(base, _tokenId.toString(), baseExtension));
         }
 
         return super.tokenURI(_tokenId);
@@ -98,14 +98,14 @@ contract AlivelandERC721 is
         require(hasRole(MINTER_ROLE, _msgSender()), "AlivelandERC721: must have minter role to mint");
         require(msg.value >= mintFee, "AlivelandERC721: insufficient funds to mint");
 
-        uint256 newTokenId_ = tokenIdTracker.current();
-        _mint(_to, newTokenId_);
+        uint256 newTokenId = tokenIdTracker.current();
+        _mint(_to, newTokenId);
         
-        string memory newTokenURI_ = tokenURI(newTokenId_);
-        _setTokenURI(newTokenId_, newTokenURI_);
+        string memory newTokenURI = tokenURI(newTokenId);
+        _setTokenURI(newTokenId, newTokenURI);
 
-        (bool success_,) = feeRecipient.call{value : msg.value}("");
-        require(success_, "AlivelandERC721: transfer failed");
+        (bool success,) = feeRecipient.call{value : msg.value}("");
+        require(success, "AlivelandERC721: transfer failed");
 
         tokenIdTracker.increment();
     }
@@ -132,22 +132,22 @@ contract AlivelandERC721 is
     }
 
     function _burn(uint256 _tokenId) internal virtual override(ERC721, ERC721URIStorage) {
-        address owner_ = ERC721.ownerOf(_tokenId);
+        address owner = ERC721.ownerOf(_tokenId);
 
-        _beforeTokenTransfer(owner_, address(0), _tokenId, 1);
+        _beforeTokenTransfer(owner, address(0), _tokenId, 1);
 
-        owner_ = ERC721.ownerOf(_tokenId);
+        owner = ERC721.ownerOf(_tokenId);
 
         delete tokenApprovals[_tokenId];
 
         unchecked {
-            balances[owner_] -= 1;
+            balances[owner] -= 1;
         }
         delete owners[_tokenId];
 
-        emit Transfer(owner_, address(0), _tokenId);
+        emit Transfer(owner, address(0), _tokenId);
 
-        _afterTokenTransfer(owner_, address(0), _tokenId, 1);
+        _afterTokenTransfer(owner, address(0), _tokenId, 1);
     }
 
     function _baseURI() internal view virtual override returns (string memory) {

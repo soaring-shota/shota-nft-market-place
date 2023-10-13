@@ -50,24 +50,24 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
         
         _mint(_to, _id, _amount, _data);
 
-        (bool success_,) = feeRecipient.call{value : msg.value}("");
-        require(success_, "AlivelandERC1155: transfer failed");
+        (bool success,) = feeRecipient.call{value : msg.value}("");
+        require(success, "AlivelandERC1155: transfer failed");
     }
 
     function mintBatch(address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) public payable virtual {
         require(hasRole(MINTER_ROLE, _msgSender()), "AlivelandERC1155: must have minter role to mint");
 
-        uint256 totalFee_;
+        uint256 totalFee;
         for (uint i = 0; i < _ids.length; i++)
         {            
-            totalFee_ += (mintFee * _amounts[i]);
+            totalFee += (mintFee * _amounts[i]);
         }
-        require(msg.value >= totalFee_, "AlivelandERC1155: insufficient funds to mintBatch");
+        require(msg.value >= totalFee, "AlivelandERC1155: insufficient funds to mintBatch");
 
         _mintBatch(_to, _ids, _amounts, _data);
 
-        (bool success_,) = feeRecipient.call{value : msg.value}("");
-        require(success_, "AlivelandERC1155: transfer failed to mintBatch");
+        (bool success,) = feeRecipient.call{value : msg.value}("");
+        require(success, "AlivelandERC1155: transfer failed to mintBatch");
     }
 
     function pause() public virtual {
