@@ -1,64 +1,118 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract AlivelandERC721 is
     Context,
     AccessControlEnumerable,
     ERC721Enumerable,
+    ERC721URIStorage,
     ERC721Burnable,
-    ERC721Pausable
+    ERC721Pausable,
+    Ownable
 {
     using Counters for Counters.Counter;
+    using Strings for uint256;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    Counters.Counter private _tokenIdTracker;
+    Counters.Counter private tokenIdTracker;
 
-    string private _baseTokenURI;
-    uint256 public _mintFee;
-    address payable public _feeRecipient;
+    address auction;
+    address marketplace;
+    string private baseTokenURI;
+    uint256 public mintFee;
+    address payable public feeRecipient;
+    string public baseExtension = ".json";
+    
+    mapping(uint256 => address) private owners;
+    mapping(address => uint256) private balances;
+    mapping(uint256 => address) private tokenApprovals;
+
+    event UpdateMintFee(
+        uint256 mintFee
+    );
+
+    event UpdateFeeRecipient(
+        address payable feeRecipient
+    );
 
     constructor(
-        string memory name, 
-        string memory symbol,
-        string memory baseTokenURI,
-        uint256 mintFee,
-        address payable feeRecipient
-    ) ERC721(name, symbol) {
-        _baseTokenURI = baseTokenURI;
-        _mintFee = mintFee;
-        _feeRecipient = feeRecipient;
+        string memory _name, 
+        string memory _symbol,
+        address _auction,
+        address _marketplace,
+        string memory _baseTokenURI,
+        uint256 _mintFee,
+        address payable _feeRecipient,
+        address _deployer
+    ) ERC721(_name, _symbol) {
+        auction = _auction;
+        marketplace = _marketplace;
+        baseTokenURI = _baseTokenURI;
+        mintFee = _mintFee;
+        feeRecipient = _feeRecipient;
 
-        _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        super._transferOwnership(_deployer);
 
-        _setupRole(MINTER_ROLE, _msgSender());
-        _setupRole(PAUSER_ROLE, _msgSender());
+        _setupRole(DEFAULT_ADMIN_ROLE, _deployer);
+        _setupRole(MINTER_ROLE, _deployer);
+        _setupRole(PAUSER_ROLE, _deployer);
     }
 
-    function _baseURI() internal view virtual override returns (string memory) {
-        return _baseTokenURI;
+    function updateMintFee(uint256 _mintFee) external onlyOwner {
+        mintFee = _mintFee;
+        emit UpdateMintFee(_mintFee);
     }
 
-    function mint(address to) public payable virtual {
+    function updateFeeRecipient(address payable _feeRecipient) external onlyOwner {
+        feeRecipient = _feeRecipient;
+        emit UpdateFeeRecipient(_feeRecipient);
+    }
+    
+    function tokenURI(uint256 _tokenId) public view virtual override(ERC721, ERC721URIStorage) returns (string memory) {
+        _requireMinted(_tokenId);
+
+        string memory base = _baseURI();
+        
+        if (bytes(base).length > 0) {
+            return string(abi.encodePacked(base, _tokenId.toString(), baseExtension));
+        }
+
+        return super.tokenURI(_tokenId);
+    }
+
+    function mint(address _to) public payable virtual {
         require(hasRole(MINTER_ROLE, _msgSender()), "AlivelandERC721: must have minter role to mint");
-        require(msg.value >= _mintFee, "AlivelandERC721: insufficient funds to mint");
+        require(msg.value >= mintFee, "AlivelandERC721: insufficient funds to mint");
 
-        _mint(to, _tokenIdTracker.current());
+        uint256 newTokenId = tokenIdTracker.current();
+        _mint(_to, newTokenId);
+        
+        string memory newTokenURI = tokenURI(newTokenId);
+        _setTokenURI(newTokenId, newTokenURI);
 
-        (bool success,) = _feeRecipient.call{value : _mintFee}("");
+        (bool success,) = feeRecipient.call{value : msg.value}("");
         require(success, "AlivelandERC721: transfer failed");
 
-        _tokenIdTracker.increment();
+        tokenIdTracker.increment();
+    }
+
+    function burn(uint256 _tokenId) public virtual override {
+        require(_isApprovedOrOwner(_msgSender(), _tokenId), "AlivelandERC721: caller is not token owner or approved");
+        ERC721._burn(_tokenId);
     }
 
     function pause() public virtual {
@@ -71,18 +125,41 @@ contract AlivelandERC721 is
         _unpause();
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 firstTokenId,
-        uint256 batchSize
-    ) internal virtual override(ERC721, ERC721Enumerable, ERC721Pausable) {
-        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+    function supportsInterface(
+        bytes4 _interfaceId
+    ) public view virtual override(AccessControlEnumerable, ERC721, ERC721Enumerable, ERC721URIStorage) returns (bool) {
+        return super.supportsInterface(_interfaceId);
     }
 
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(AccessControlEnumerable, ERC721, ERC721Enumerable) returns (bool) {
-        return super.supportsInterface(interfaceId);
+    function _burn(uint256 _tokenId) internal virtual override(ERC721, ERC721URIStorage) {
+        address owner = ERC721.ownerOf(_tokenId);
+
+        _beforeTokenTransfer(owner, address(0), _tokenId, 1);
+
+        owner = ERC721.ownerOf(_tokenId);
+
+        delete tokenApprovals[_tokenId];
+
+        unchecked {
+            balances[owner] -= 1;
+        }
+        delete owners[_tokenId];
+
+        emit Transfer(owner, address(0), _tokenId);
+
+        _afterTokenTransfer(owner, address(0), _tokenId, 1);
+    }
+
+    function _baseURI() internal view virtual override returns (string memory) {
+        return baseTokenURI;
+    }
+
+    function _beforeTokenTransfer(
+        address _from,
+        address _to,
+        uint256 _firstTokenId,
+        uint256 _batchSize
+    ) internal virtual override(ERC721, ERC721Enumerable, ERC721Pausable) {
+        super._beforeTokenTransfer(_from, _to, _firstTokenId, _batchSize);
     }
 }
