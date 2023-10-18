@@ -22,6 +22,20 @@ interface IAlivelandAddressRegistry {
     function tokenRegistry() external view returns (address);
 }
 
+interface IAlivelandAuction {
+    function auctions(address, uint256)
+        external
+        view
+        returns (
+            address,
+            address,
+            uint256,
+            uint256,
+            uint256,
+            bool
+        );
+}
+
 interface IAlivelandERC721Factory {
     function exists(address) external view returns (bool);
 }
@@ -45,12 +59,20 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
     mapping(address => mapping(uint256 => uint16)) public royalties;
     mapping(address => mapping(uint256 => mapping(address => Listing))) public listings;
     mapping(address => CollectionRoyalty) public collectionRoyalties;
+    mapping(address => mapping(uint256 => mapping(address => Offer))) public offers;
 
     struct Listing {
         uint256 quantity;
         address payToken;
         uint256 pricePerItem;
         uint256 startingTime;
+    }
+
+    struct Offer {
+        IERC20 payToken;
+        uint256 quantity;
+        uint256 pricePerItem;
+        uint256 deadline;
     }
 
     struct CollectionRoyalty {
@@ -89,6 +111,20 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
         address indexed nft,
         uint256 tokenId
     );   
+    event OfferCreated(
+        address indexed creator,
+        address indexed nft,
+        uint256 tokenId,
+        uint256 quantity,
+        address payToken,
+        uint256 pricePerItem,
+        uint256 deadline
+    );
+    event OfferCanceled(
+        address indexed creator,
+        address indexed nft,
+        uint256 tokenId
+    );
     event UpdatePlatformFee(uint16 platformFee);
     event UpdatePlatformFeeRecipient(address payable platformFeeRecipient);
 
@@ -124,6 +160,32 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
         _validOwner(_nftAddress, _tokenId, _owner, listedItem.quantity);
 
         require(_getNow() >= listedItem.startingTime, "item not buyable");
+        _;
+    }
+
+    modifier offerExists(
+        address _nftAddress,
+        uint256 _tokenId,
+        address _creator
+    ) {
+        Offer memory offer = offers[_nftAddress][_tokenId][_creator];
+        require(
+            offer.quantity > 0 && offer.deadline > _getNow(),
+            "offer not exists or expired"
+        );
+        _;
+    }
+
+    modifier offerNotExists(
+        address _nftAddress,
+        uint256 _tokenId,
+        address _creator
+    ) {
+        Offer memory offer = offers[_nftAddress][_tokenId][_creator];
+        require(
+            offer.quantity == 0 || offer.deadline <= _getNow(),
+            "offer already created"
+        );
         _;
     }
 
@@ -284,6 +346,132 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
             price.div(listedItem.quantity)
         );
         delete (listings[_nftAddress][_tokenId][_owner]);
+    }
+
+    function createOffer(
+        address _nftAddress,
+        uint256 _tokenId,
+        IERC20 _payToken,
+        uint256 _quantity,
+        uint256 _pricePerItem,
+        uint256 _deadline
+    ) external offerNotExists(_nftAddress, _tokenId, _msgSender()) {
+        require(
+            IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721) ||
+                IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155),
+            "invalid nft address"
+        );
+
+        IAlivelandAuction auction = IAlivelandAuction(addressRegistry.auction());
+
+        (, , , uint256 startTime, , bool resulted) = auction.auctions(
+            _nftAddress,
+            _tokenId
+        );
+
+        require(
+            startTime == 0 || resulted == true,
+            "cannot place an offer if auction is going on"
+        );
+
+        require(_deadline > _getNow(), "invalid expiration");
+
+        _validPayToken(address(_payToken));
+
+        offers[_nftAddress][_tokenId][_msgSender()] = Offer(
+            _payToken,
+            _quantity,
+            _pricePerItem,
+            _deadline
+        );
+
+        emit OfferCreated(
+            _msgSender(),
+            _nftAddress,
+            _tokenId,
+            _quantity,
+            address(_payToken),
+            _pricePerItem,
+            _deadline
+        );
+    }
+
+    function cancelOffer(address _nftAddress, uint256 _tokenId)
+        external
+        offerExists(_nftAddress, _tokenId, _msgSender())
+    {
+        delete (offers[_nftAddress][_tokenId][_msgSender()]);
+        emit OfferCanceled(_msgSender(), _nftAddress, _tokenId);
+    }
+
+    function acceptOffer(
+        address _nftAddress,
+        uint256 _tokenId,
+        address _creator
+    ) external nonReentrant offerExists(_nftAddress, _tokenId, _creator) {
+        Offer memory offer = offers[_nftAddress][_tokenId][_creator];
+
+        _validOwner(_nftAddress, _tokenId, _msgSender(), offer.quantity);
+
+        uint256 price = offer.pricePerItem.mul(offer.quantity);
+        uint256 feeAmount = price.mul(platformFee).div(1e3);
+        uint256 royaltyFee;
+
+        offer.payToken.safeTransferFrom(_creator, feeReceipient, feeAmount);
+
+        address minter = minters[_nftAddress][_tokenId];
+        uint16 royalty = royalties[_nftAddress][_tokenId];
+
+        if (minter != address(0) && royalty != 0) {
+            royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
+            offer.payToken.safeTransferFrom(_creator, minter, royaltyFee);
+            feeAmount = feeAmount.add(royaltyFee);
+        } else {
+            minter = collectionRoyalties[_nftAddress].feeRecipient;
+            royalty = collectionRoyalties[_nftAddress].royalty;
+            if (minter != address(0) && royalty != 0) {
+                royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
+                offer.payToken.safeTransferFrom(_creator, minter, royaltyFee);
+                feeAmount = feeAmount.add(royaltyFee);
+            }
+        }
+
+        offer.payToken.safeTransferFrom(
+            _creator,
+            _msgSender(),
+            price.sub(feeAmount)
+        );
+
+        if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
+            IERC721(_nftAddress).safeTransferFrom(
+                _msgSender(),
+                _creator,
+                _tokenId
+            );
+        } else {
+            IERC1155(_nftAddress).safeTransferFrom(
+                _msgSender(),
+                _creator,
+                _tokenId,
+                offer.quantity,
+                bytes("")
+            );
+        }
+
+        emit ItemSold(
+            _msgSender(),
+            _creator,
+            _nftAddress,
+            _tokenId,
+            offer.quantity,
+            address(offer.payToken),
+            offer.pricePerItem
+        );
+
+        emit OfferCanceled(_creator, _nftAddress, _tokenId);
+
+        delete (listings[_nftAddress][_tokenId][_msgSender()]);
+        delete (offers[_nftAddress][_tokenId][_creator]);
     }
 
     function registerRoyalty(
