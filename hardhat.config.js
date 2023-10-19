@@ -2,6 +2,7 @@
 require('dotenv').config();
 require("@nomicfoundation/hardhat-toolbox");
 require("@nomicfoundation/hardhat-chai-matchers");
+require("@nomiclabs/hardhat-truffle4");
 
 const { 
   POLYGON_API_URL, 

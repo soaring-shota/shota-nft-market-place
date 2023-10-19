@@ -28,6 +28,8 @@
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "@nomicfoundation/hardhat-verify": "^1.1.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "@nomiclabs/hardhat-truffle4": "^2.0.6",
+    "@nomiclabs/hardhat-web3-legacy": "^2.0.0",
     "@openzeppelin/contracts": "^4.9.3",
     "@openzeppelin/contracts-upgradeable": "^4.9.3",
     "@openzeppelin/hardhat-upgrades": "^2.2.1",
@@ -42,10 +44,10 @@
     "solidity-coverage": "^0.8.5",
     "ts-node": "^10.9.1",
     "typechain": "^8.3.1",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "web3": "^0.20.7"
   },
   "dependencies": {
-    "dotenv": "^16.3.1",
-    "web3": "^4.1.2"
+    "dotenv": "^16.3.1"
   }
 }

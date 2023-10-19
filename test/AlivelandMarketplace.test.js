@@ -1,5 +1,4 @@
 const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
-const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const {
@@ -9,7 +8,6 @@ const {
     expectRevert,
     balance,
 } = require('@openzeppelin/test-helpers');
-const { any } = require("hardhat/internal/core/params/argumentTypes");
 const { parseEther, ZeroAddress } = require("ethers");
 const { ZERO_ADDRESS, MAX_UINT256 } = constants;
 
@@ -136,7 +134,7 @@ describe("Aliveland Marketplace Contract", () => {
         return { AlivelandMarketplace, AlivelandNFT, owner, feeRecipient, buyer, minter, auction, marketplace };
     }
 
-    describe('Canceling Item', function() {
+    describe('Canceling Item', () => {
         it('reverts when item is not listed', async () => {
             const { AlivelandMarketplace, AlivelandNFT, owner } = await loadFixture(listItemFixture);
             await expect(
