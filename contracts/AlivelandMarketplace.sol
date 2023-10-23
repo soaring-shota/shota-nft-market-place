@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 interface IAlivelandAddressRegistry {
     function auction() external view returns (address);
@@ -53,7 +54,7 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
     bytes4 private constant INTERFACE_ID_ERC1155 = 0xd9b67a26;
     
     uint16 public platformFee;
-    address payable public feeReceipient;
+    address payable public feeReceipient;  
 
     mapping(address => mapping(uint256 => address)) public minters;
     mapping(address => mapping(uint256 => uint16)) public royalties;
@@ -521,6 +522,16 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
             collectionRoyalty.feeRecipient = _feeRecipient;
             collectionRoyalty.creator = _creator;
         }
+    }
+
+    function getPrice(address _tokenAddr) public view returns (uint256) {     
+        if (_tokenAddr == address(0))
+            return 0;
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(_tokenAddr);
+        (,int price,,,) = priceFeed.latestRoundData();
+
+        return uint256(price);
+
     }
 
     function updatePlatformFee(uint16 _platformFee) external onlyOwner {

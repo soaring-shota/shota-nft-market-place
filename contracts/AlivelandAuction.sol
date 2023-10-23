@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
@@ -36,14 +36,14 @@ interface IAlivelandMarketplace {
             address
         );
 
-    function getPrice(address) external view returns (int256);
+    function getPrice(address) external view returns (uint256);
 }
 
 interface IAlivelandTokenRegistry {
     function enabled(address) external returns (bool);
 }
 
-contract AlivelandAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
+contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
     using SafeMath for uint256;
     using AddressUpgradeable for address payable;
     using SafeERC20 for IERC20;
@@ -138,7 +138,6 @@ contract AlivelandAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         uint256 indexed tokenId,
         address indexed winner,
         address payToken,
-        int256 unitPrice,
         uint256 winningBid
     );
 
@@ -169,7 +168,6 @@ contract AlivelandAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         platformFeeRecipient = _platformFeeRecipient;
         emit AlivelandAuctionContractDeployed();
 
-        __Ownable_init();
         __ReentrancyGuard_init();
     }
 
@@ -193,9 +191,9 @@ contract AlivelandAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
 
         require(
             _payToken == address(0) ||
-                (addressRegistry.tokenRegistry() != address(0) &&
-                    IAlivelandTokenRegistry(addressRegistry.tokenRegistry())
-                        .enabled(_payToken)),
+            (addressRegistry.tokenRegistry() != address(0) &&
+                IAlivelandTokenRegistry(addressRegistry.tokenRegistry())
+                    .enabled(_payToken)),
             "invalid pay token"
         );
 
@@ -405,9 +403,9 @@ contract AlivelandAuction is OwnableUpgradeable, ReentrancyGuardUpgradeable {
             _tokenId,
             winner,
             auction.payToken,
-            IAlivelandMarketplace(addressRegistry.marketplace()).getPrice(
-                auction.payToken
-            ),
+            // IAlivelandMarketplace(addressRegistry.marketplace()).getPrice(
+            //     auction.payToken
+            // ),
             winningBid
         );
 

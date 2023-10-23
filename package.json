@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/aliveland/aliveland-nft-contract#readme",
   "devDependencies": {
+    "@chainlink/contracts": "^0.8.0",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",
     "@nomicfoundation/hardhat-ethers": "^3.0.4",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.9",
