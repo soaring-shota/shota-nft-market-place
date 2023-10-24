@@ -4,7 +4,8 @@ const { ethers } = require("hardhat");
 const {
     constants,
     expectRevert,
-    balance
+    balance,
+    BN
 } = require('@openzeppelin/test-helpers');
 const { parseEther, ZeroAddress } = require("ethers");
 const ether = require("@openzeppelin/test-helpers/src/ether");
@@ -20,6 +21,7 @@ describe("Aliveland Auction Contract", () => {
     const minBidReserve = true;
     const bidAmount = ethers.parseEther("1.2");
     const bidLowAmount = ethers.parseEther("0.5");
+    const TWENTY_TOKENS = '20000000000000000000';
     const TOKENS = '1000000000000000000000';
 
     async function deployTokenFixture() {
@@ -69,7 +71,7 @@ describe("Aliveland Auction Contract", () => {
     describe('Create auction', async () => {
         it('Should revert when not approved', async () => {
             const { AlivelandAuction, AlivelandNFT, mockToken, owner } = await loadFixture(deployTokenFixture);
-            await expect(
+            await expectRevert(
                 AlivelandAuction.createAuction(
                     AlivelandNFT.target,
                     firstTokenId,
@@ -78,15 +80,16 @@ describe("Aliveland Auction Contract", () => {
                     '1',
                     minBidReserve,
                     '10'
-                )
-            ).to.be.reverted;
+                ),
+                "not owner or contract not approved"
+            );
         });
 
         it('Should revert when end time is larger than start (by 5 minutes)', async () => {
             const { AlivelandAuction, AlivelandNFT, mockToken, owner } = await loadFixture(deployTokenFixture);
             await AlivelandNFT.setApprovalForAll(AlivelandAuction.target, true);
             await AlivelandAuction.setNowOverride('12');
-            await expect(
+            await expectRevert(
                 AlivelandAuction.createAuction(
                     AlivelandNFT.target,
                         firstTokenId,
@@ -95,15 +98,16 @@ describe("Aliveland Auction Contract", () => {
                         '1',
                         minBidReserve,
                         '10'
-                )
-            ).to.be.reverted;
+                ),
+                "end time must be greater than start (by 5 minutes)"
+            );
         });
 
-        it('Should revert when endTime is in the past', async () => {
+        it('Should revert when starttime is invalid', async () => {
             const { AlivelandAuction, AlivelandNFT, mockToken, owner } = await loadFixture(deployTokenFixture);
             await AlivelandNFT.setApprovalForAll(AlivelandAuction.target, true);
             await AlivelandAuction.setNowOverride('10');
-            await expect(
+            await expectRevert(
                 AlivelandAuction.createAuction(
                     AlivelandNFT.target,
                     firstTokenId,
@@ -112,8 +116,9 @@ describe("Aliveland Auction Contract", () => {
                     '1',
                     minBidReserve,
                     '310'
-                )
-            ).to.be.reverted;
+                ),
+                "invalid start time"
+            );
         });
 
         it('Should create auction successfully and emit AuctionCreated event', async () => {
@@ -139,7 +144,7 @@ describe("Aliveland Auction Contract", () => {
     });
 
     async function auctionFixture() {
-        const [owner, bidder, feeRecipient, minter, marketplace] = await ethers.getSigners();
+        const [owner, bidder, feeRecipient, minter] = await ethers.getSigners();
 
         const AlivelandMarketplace = await ethers.deployContract("AlivelandMarketplace");
         AlivelandMarketplace.initialize(feeRecipient, platformFee);
@@ -191,39 +196,42 @@ describe("Aliveland Auction Contract", () => {
             '350'
         );
 
-        return { AlivelandMarketplace, AlivelandNFT, AlivelandAuction, mockToken, owner, bidder, feeRecipient, minter, marketplace };
+        return { AlivelandMarketplace, AlivelandNFT, AlivelandAuction, mockToken, owner, bidder, feeRecipient, minter };
     }
 
     describe('Place bid', async () => {
         it('Should revert when bidder is smart contract', async () => {
-            // const { AlivelandAuction, AlivelandNFT, owner } = await loadFixture(auctionFixture);
-            // const biddingContract = await BiddingContractMock.new(AlivelandAuction.target);
-            // await expect(
-            //    biddingContract.bid(AlivelandNFT.target, firstTokenId, bidAmount)
-            // ).to.be.reverted;
+            const { AlivelandAuction, AlivelandNFT, owner } = await loadFixture(auctionFixture);
+            const biddingContract = await BiddingContractMock.new(AlivelandAuction.target);
+            await expectRevert(
+               biddingContract.bid(AlivelandNFT.target, firstTokenId, bidAmount),
+               "no contracts permitted"
+            );
         });
 
         it('Should revert when bidding outside of the auction duration', async () => {
             const { AlivelandAuction, AlivelandNFT, owner } = await loadFixture(auctionFixture);
-            await expect(
+            await expectRevert(
                 AlivelandAuction.placeBid(
                     AlivelandNFT.target,
                     firstTokenId,
                     bidAmount
-                )
-            ).to.be.reverted;
+                ),
+                "bidding outside of the auction duration"
+            );
         });
 
         it('Should revert when bid is lower than reserved price', async () => {
             const { AlivelandAuction, AlivelandNFT, owner } = await loadFixture(auctionFixture);
             await AlivelandAuction.setNowOverride(20);
-            await expect(
+            await expectRevert(
                 AlivelandAuction.placeBid(
                     AlivelandNFT.target,
                     firstTokenId,
                     bidLowAmount
-                )
-            ).to.be.reverted;
+                ),
+                "bid cannot be lower than reserve price"
+            );
         });
 
         it('Should place bid successfully and emit BidPlaced event', async () => {
@@ -312,16 +320,18 @@ describe("Aliveland Auction Contract", () => {
     describe('Withdraw bid', async () => {
         it('Should revert when msgSender is not highest bidder', async () => {
             const { AlivelandAuction, AlivelandNFT, owner, bidder2 } = await loadFixture(placeBidFixture);
-            await expect(
-               AlivelandAuction.connect(bidder2).withdrawBid(AlivelandNFT.target, firstTokenId)
-            ).to.be.reverted;
+            await expectRevert(
+               AlivelandAuction.connect(bidder2).withdrawBid(AlivelandNFT.target, firstTokenId),
+               "you are not the highest bidder"
+            );
         });
 
         it('Should revert when trying to withdraw within 12 hours', async () => {
             const { AlivelandAuction, AlivelandNFT, owner, bidder } = await loadFixture(placeBidFixture);
-            await expect(
-                AlivelandAuction.connect(bidder).withdrawBid(AlivelandNFT.target, firstTokenId)
-            ).to.be.reverted;
+            await expectRevert(
+                AlivelandAuction.connect(bidder).withdrawBid(AlivelandNFT.target, firstTokenId),
+                "can withdraw only after 12 hours (after auction ended)"
+            );
         });
 
         it('Should revert when withdrawing a bid which does not exist', async () => {
@@ -339,9 +349,10 @@ describe("Aliveland Auction Contract", () => {
             expect(originalBidder).to.equal(bidder.address);
     
             await AlivelandAuction.connect(owner).toggleIsPaused();
-            await expect(
-                AlivelandAuction.connect(bidder).withdrawBid(AlivelandNFT.target, firstTokenId)
-            ).to.be.reverted;
+            await expectRevert(
+                AlivelandAuction.connect(bidder).withdrawBid(AlivelandNFT.target, firstTokenId),
+                "contract paused"
+            );
         });
 
         it('Should withdraw bid successfully and emit BidWithdrawn event', async () => {
@@ -372,38 +383,48 @@ describe("Aliveland Auction Contract", () => {
         describe('Validation', () => {
             it('Should revert when sender is not item owner', async () => {
                 const { AlivelandAuction, AlivelandNFT, mockToken, owner, bidder } = await loadFixture(placeBidFixture);
-                await expect(
-                    AlivelandAuction.connect(bidder).resultAuction(AlivelandNFT.target, firstTokenId)
-                ).to.be.reverted;
+                await expectRevert(
+                    AlivelandAuction.connect(bidder).resultAuction(AlivelandNFT.target, firstTokenId),
+                    "sender must be item owner"
+                );
             });
     
             it('Should revert when auction is not ended', async () => {
                 const { AlivelandAuction, AlivelandNFT, mockToken, owner, bidder } = await loadFixture(placeBidFixture);
-                await expect(
-                    AlivelandAuction.resultAuction(AlivelandNFT.target, firstTokenId)
-                ).to.be.reverted;
+                await expectRevert(
+                    AlivelandAuction.resultAuction(AlivelandNFT.target, firstTokenId),
+                    "auction not ended"
+                );
             });
     
             it('Should revert when there is no open bid', async () => {
                 const { AlivelandAuction, AlivelandNFT, mockToken, owner, bidder } = await loadFixture(auctionFixture);
                 await AlivelandAuction.setNowOverride(45000);
-                await expect(
-                    AlivelandAuction.resultAuction(AlivelandNFT.target, firstTokenId)
-                ).to.be.reverted;
+                await expectRevert(
+                    AlivelandAuction.resultAuction(AlivelandNFT.target, firstTokenId),
+                    "no open bids"
+                );
             });
             
             it('Should revert when highest bid is below reservePrice', async () => {
-                // const { AlivelandAuction, AlivelandNFT, mockToken, owner, bidder } = await loadFixture(auctionFixture);
-                // await AlivelandAuction.setNowOverride(20);
-                // await AlivelandAuction.connect(bidder).placeBid(
-                //     AlivelandNFT.target,
-                //     firstTokenId,
-                //     bidLowAmount
-                // );
-                // await AlivelandAuction.setNowOverride(45000);
-                // await expect(
-                //     AlivelandAuction.resultAuction(AlivelandNFT.target, firstTokenId)
-                // ).to.be.reverted;
+                const { AlivelandAuction, AlivelandNFT, mockToken, owner, bidder } = await loadFixture(auctionFixture);
+                await AlivelandAuction.setNowOverride(20);
+                await mockToken.approve(AlivelandAuction.target, TOKENS);
+                await AlivelandAuction.connect(bidder).placeBid(
+                    AlivelandNFT.target,
+                    firstTokenId,
+                    pricePerItem
+                );
+                await AlivelandAuction.updateAuctionReservePrice(
+                    AlivelandNFT.target,
+                    firstTokenId,
+                    bidAmount
+                )
+                await AlivelandAuction.setNowOverride(45000);
+                await expectRevert(
+                    AlivelandAuction.resultAuction(AlivelandNFT.target, firstTokenId),
+                    'highest bid is below reservePrice'
+                );
             });
             
             it('Should revert when auction already resulted', async () => {
@@ -430,7 +451,22 @@ describe("Aliveland Auction Contract", () => {
             });
     
             it('Should transfer funds to the token creator and platform', async () => {
-                
+                const { AlivelandAuction, AlivelandNFT, mockToken, owner, bidder, feeRecipient } = await loadFixture(auctionFixture);
+                await AlivelandAuction.initialize(feeRecipient.address);
+
+                await AlivelandAuction.setNowOverride(20);
+                await mockToken.approve(AlivelandAuction.target, TOKENS);
+                await AlivelandAuction.connect(bidder).placeBid(
+                    AlivelandNFT.target,
+                    firstTokenId,
+                    bidAmount
+                );
+
+                await AlivelandAuction.setNowOverride(45000);
+                await AlivelandAuction.resultAuction(AlivelandNFT.target, firstTokenId);
+
+                expect(feeRecipient).to.changeEtherBalance(bidder.address, ethers.parseEther("0.025"));
+                expect(owner).to.changeEtherBalance(bidder.address, bidAmount);
             });
     
             it('Should transfer funds to the token to only the creator when reserve meet directly', async () => {
@@ -439,8 +475,8 @@ describe("Aliveland Auction Contract", () => {
         
                 await AlivelandAuction.resultAuction(AlivelandNFT.target, firstTokenId);
 
-                expect(owner).to.changeEtherBalance(owner.address, pricePerItem);
-                expect(feeRecipient).to.changeEtherBalance('0');
+                expect(owner).to.changeEtherBalance(bidder.address, pricePerItem);
+                expect(feeRecipient).to.changeEtherBalance(bidder.address, '0');
             });
     
             it('Should record primary sale price on garment NFT', async () => {
@@ -467,9 +503,10 @@ describe("Aliveland Auction Contract", () => {
     describe('Cancel auction', async () => {
         it('Should revert when sender is not item owner', async () => {
             const { AlivelandAuction, AlivelandNFT, mockToken, owner, bidder } = await loadFixture(placeBidFixture);
-            await expect(
-                AlivelandAuction.connect(bidder).cancelAuction(AlivelandNFT.target, firstTokenId)
-            ).to.be.reverted;
+            await expectRevert(
+                AlivelandAuction.connect(bidder).cancelAuction(AlivelandNFT.target, firstTokenId),
+                "sender must be owner"
+            );
         });
 
         it('Should not cancel if auction already cancelled', async () => {
@@ -483,15 +520,14 @@ describe("Aliveland Auction Contract", () => {
         });
 
         it('Should not cancel if auction already resulted', async () => {
-            // const { AlivelandAuction, AlivelandNFT, mockToken, owner, bidder } = await loadFixture(placeBidFixture);
-            // await AlivelandAuction.setNowOverride('400');
+            const { AlivelandAuction, AlivelandNFT, mockToken, owner, bidder } = await loadFixture(placeBidFixture);
+            await AlivelandAuction.setNowOverride('400');
 
-            // await AlivelandAuction.resultAuction(AlivelandNFT.target, firstTokenId);
+            await AlivelandAuction.resultAuction(AlivelandNFT.target, firstTokenId);
 
-            // await expectRevert(
-            //     AlivelandAuction.cancelAuction(AlivelandNFT.target, firstTokenId),
-            //     'AlivelandAuction.cancelAuction: already resulted'
-            // );
+            await expect(
+                AlivelandAuction.cancelAuction(AlivelandNFT.target, firstTokenId)
+            ).to.be.reverted;
         });
 
         it('Should cancel clears down auctions and top bidder', async () => {
@@ -520,6 +556,31 @@ describe("Aliveland Auction Contract", () => {
         it('Should transfer no funds if no bids', async () => {
             const { AlivelandAuction, AlivelandNFT, mockToken, owner, bidder } = await loadFixture(placeBidFixture);
             await AlivelandAuction.cancelAuction(AlivelandNFT.target, firstTokenId);
+        });
+    });
+
+    describe('reclaimERC20()', async () => {
+        describe('validation', async () => {
+            it('Should reclaim erc20 by only owner', async () => {
+                const { AlivelandAuction, mockToken, owner, bidder } = await loadFixture(deployTokenFixture);
+                await expectRevert(
+                    AlivelandAuction.connect(bidder).reclaimERC20(mockToken.target),
+                    'Ownable: caller is not the owner'
+                );
+            });
+        
+            it('Should reclaim Erc20 successfully', async () => {
+                const { AlivelandAuction, mockToken, owner, bidder } = await loadFixture(deployTokenFixture);
+
+                await mockToken.transfer(AlivelandAuction.target, TWENTY_TOKENS, { from: bidder });        
+                const adminBalanceBeforeReclaim = await mockToken.balanceOf(owner.address);
+                expect(await mockToken.balanceOf(AlivelandAuction.target)).to.be.equal(TWENTY_TOKENS);
+
+                await AlivelandAuction.connect(owner).reclaimERC20(mockToken.target);
+        
+                expect(await mockToken.balanceOf(AlivelandAuction.target)).to.be.equal('0');
+                expect(await mockToken.balanceOf(owner.address)).to.be.greaterThan(adminBalanceBeforeReclaim);
+            });
         });
     });
 });

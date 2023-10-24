@@ -190,7 +190,6 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         );
 
         require(
-            _payToken == address(0) ||
             (addressRegistry.tokenRegistry() != address(0) &&
                 IAlivelandTokenRegistry(addressRegistry.tokenRegistry())
                     .enabled(_payToken)),
@@ -403,9 +402,6 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
             _tokenId,
             winner,
             auction.payToken,
-            // IAlivelandMarketplace(addressRegistry.marketplace()).getPrice(
-            //     auction.payToken
-            // ),
             winningBid
         );
 

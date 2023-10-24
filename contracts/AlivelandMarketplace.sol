@@ -544,6 +544,10 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
         emit UpdatePlatformFeeRecipient(_platformFeeRecipient);
     }
 
+    function updateAddressRegistry(address _registry) external onlyOwner {
+        addressRegistry = IAlivelandAddressRegistry(_registry);
+    }
+
     function _isAlivelandNFT(address _nftAddress) internal view returns (bool) {
         return
             IAlivelandERC721Factory(addressRegistry.erc721Factory()).exists(_nftAddress) ||
@@ -556,10 +560,9 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
 
     function _validPayToken(address _payToken) internal view {
         require(
-            _payToken == address(0) ||
-                addressRegistry.tokenRegistry() != address(0) &&
-                    IAlivelandTokenRegistry(addressRegistry.tokenRegistry())
-                        .enabled(_payToken),
+            addressRegistry.tokenRegistry() != address(0) &&
+                IAlivelandTokenRegistry(addressRegistry.tokenRegistry())
+                    .enabled(_payToken),
             "invalid pay token"
         );
     }

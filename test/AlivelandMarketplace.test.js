@@ -9,7 +9,6 @@ const {
     balance,
 } = require('@openzeppelin/test-helpers');
 const { parseEther, ZeroAddress } = require("ethers");
-const { ZERO_ADDRESS, MAX_UINT256 } = constants;
 
 describe("Aliveland Marketplace Contract", () => {
     const firstTokenId = '0';
@@ -17,6 +16,7 @@ describe("Aliveland Marketplace Contract", () => {
     const platformFee = '25';
     const pricePerItem = ethers.parseEther("1");
     const newPrice = ethers.parseEther("0.5");
+    const TOKENS = '1000000000000000000000';
 
     async function deployTokenFixture() {
         const [owner, feeRecipient, minter, auction, marketplace] = await ethers.getSigners();
@@ -42,18 +42,35 @@ describe("Aliveland Marketplace Contract", () => {
         await AlivelandNFT.mint(owner.address, { from: owner.address, value: pricePerItem });
         await AlivelandNFT.mint(owner.address, { from: owner.address, value: pricePerItem });
 
-        return { AlivelandMarketplace, AlivelandNFT, owner, feeRecipient, minter, auction, marketplace };
+        const mockToken = await ethers.deployContract(
+            "MockERC20",
+            [
+                'Mock ERC20',
+                'MOCK',
+                TOKENS,
+            ],
+            owner
+        );
+
+        const AlivelandTokenRegistry = await ethers.deployContract("AlivelandTokenRegistry");
+        await AlivelandTokenRegistry.add(mockToken.target);
+        const AlivelandAddressRegistry = await ethers.deployContract("AlivelandAddressRegistry");
+        await AlivelandAddressRegistry.updateTokenRegistry(AlivelandTokenRegistry.target);
+        await AlivelandAddressRegistry.updateMarketplace(AlivelandMarketplace.target);
+        await AlivelandMarketplace.updateAddressRegistry(AlivelandAddressRegistry.target);
+
+        return { AlivelandMarketplace, AlivelandNFT, mockToken, owner, feeRecipient, minter, auction, marketplace };
     }
   
     describe('Listing Item', () => {
         it('Should revert when not approved', async () => {
-            const { AlivelandMarketplace, AlivelandNFT, owner } = await loadFixture(deployTokenFixture);
+            const { AlivelandMarketplace, AlivelandNFT, mockToken, owner } = await loadFixture(deployTokenFixture);
             await expect(
                 AlivelandMarketplace.connect(owner).listItem(
                     AlivelandNFT.target,
                     firstTokenId,
                     '1',
-                    ZERO_ADDRESS,
+                    mockToken.target,
                     pricePerItem,
                     '0'
                 )
@@ -61,27 +78,27 @@ describe("Aliveland Marketplace Contract", () => {
         });
 
         it('Should list item successfully', async () => {
-            const { AlivelandMarketplace, AlivelandNFT, owner } = await loadFixture(deployTokenFixture);
-            await AlivelandNFT.setApprovalForAll(AlivelandMarketplace.target, true, { from: owner.address });
+            const { AlivelandMarketplace, AlivelandNFT, mockToken, owner } = await loadFixture(deployTokenFixture);
+            await AlivelandNFT.connect(owner).setApprovalForAll(AlivelandMarketplace.target, true);
             await AlivelandMarketplace.connect(owner).listItem(
                 AlivelandNFT.target,
                 firstTokenId,
                 '1',
-                ZERO_ADDRESS,
+                mockToken.target,
                 pricePerItem,
                 '0'
             );
         });
 
         it('Should emit ItemListed event', async () => {
-            const { AlivelandMarketplace, AlivelandNFT, owner } = await loadFixture(deployTokenFixture);
+            const { AlivelandMarketplace, AlivelandNFT, mockToken, owner } = await loadFixture(deployTokenFixture);
             await AlivelandNFT.setApprovalForAll(AlivelandMarketplace.target, true, { from: owner.address });
             await expect(
                 AlivelandMarketplace.connect(owner).listItem(
                     AlivelandNFT.target,
                     firstTokenId,
                     '1',
-                    ZERO_ADDRESS,
+                    mockToken.target,
                     pricePerItem,
                     '0'
                 )
@@ -90,7 +107,7 @@ describe("Aliveland Marketplace Contract", () => {
                 AlivelandNFT.target,
                 firstTokenId,
                 '1',
-                ZERO_ADDRESS,
+                mockToken.target,
                 pricePerItem,
                 '0'
             );
@@ -121,22 +138,39 @@ describe("Aliveland Marketplace Contract", () => {
         await AlivelandNFT.mint(owner.address, { from: owner.address, value: pricePerItem });
         await AlivelandNFT.mint(owner.address, { from: owner.address, value: pricePerItem });
 
-        await AlivelandNFT.setApprovalForAll(AlivelandMarketplace.target, true, { from: owner.address });
+        const mockToken = await ethers.deployContract(
+            "MockERC20",
+            [
+                'Mock ERC20',
+                'MOCK',
+                TOKENS,
+            ],
+            buyer
+        );
+
+        const AlivelandTokenRegistry = await ethers.deployContract("AlivelandTokenRegistry");
+        await AlivelandTokenRegistry.add(mockToken.target);
+        const AlivelandAddressRegistry = await ethers.deployContract("AlivelandAddressRegistry");
+        await AlivelandAddressRegistry.updateTokenRegistry(AlivelandTokenRegistry.target);
+        await AlivelandAddressRegistry.updateMarketplace(AlivelandMarketplace.target);
+        await AlivelandMarketplace.updateAddressRegistry(AlivelandAddressRegistry.target);
+
+        await AlivelandNFT.setApprovalForAll(AlivelandMarketplace.target, true);
         await AlivelandMarketplace.connect(owner).listItem(
             AlivelandNFT.target,
             firstTokenId,
             '1',
-            ZERO_ADDRESS,
+            mockToken.target,
             pricePerItem,
             '0'
         );
 
-        return { AlivelandMarketplace, AlivelandNFT, owner, feeRecipient, buyer, minter, auction, marketplace };
+        return { AlivelandMarketplace, AlivelandNFT, mockToken, owner, feeRecipient, buyer, minter, auction, marketplace };
     }
 
     describe('Canceling Item', () => {
         it('reverts when item is not listed', async () => {
-            const { AlivelandMarketplace, AlivelandNFT, owner } = await loadFixture(listItemFixture);
+            const { AlivelandMarketplace, AlivelandNFT, mockToken, owner } = await loadFixture(listItemFixture);
             await expect(
                 AlivelandMarketplace.connect(owner).cancelListing(
                     AlivelandNFT.target,
@@ -146,7 +180,7 @@ describe("Aliveland Marketplace Contract", () => {
         });
 
         it('successfully cancel the item', async function() {
-            const { AlivelandMarketplace, AlivelandNFT, owner } = await loadFixture(listItemFixture);
+            const { AlivelandMarketplace, AlivelandNFT, mockToken, owner } = await loadFixture(listItemFixture);
             await AlivelandMarketplace.connect(owner).cancelListing(
                 AlivelandNFT.target,
                 firstTokenId
@@ -154,7 +188,7 @@ describe("Aliveland Marketplace Contract", () => {
         });
 
         it('Should emit ItemCanceled event', async () => {
-            const { AlivelandMarketplace, AlivelandNFT, owner } = await loadFixture(listItemFixture);
+            const { AlivelandMarketplace, AlivelandNFT, mockToken, owner } = await loadFixture(listItemFixture);
             await expect(
                 AlivelandMarketplace.connect(owner).cancelListing(
                     AlivelandNFT.target,
@@ -170,41 +204,41 @@ describe("Aliveland Marketplace Contract", () => {
 
     describe('Updating Item Price', () => {
         it('reverts when item is not listed', async () => {
-            const { AlivelandMarketplace, AlivelandNFT, owner } = await loadFixture(listItemFixture);
+            const { AlivelandMarketplace, AlivelandNFT, mockToken, owner } = await loadFixture(listItemFixture);
             await expect(
                 AlivelandMarketplace.connect(owner).updateListing(
                     AlivelandNFT.target,
                     secondTokenId,
-                    ZERO_ADDRESS,
+                    mockToken.target,
                     newPrice
                 )
             ).to.be.reverted;
         });
 
         it('successfully update the item', async () => {
-            const { AlivelandMarketplace, AlivelandNFT, owner } = await loadFixture(listItemFixture);
+            const { AlivelandMarketplace, AlivelandNFT, mockToken, owner } = await loadFixture(listItemFixture);
             await AlivelandMarketplace.connect(owner).updateListing(
                 AlivelandNFT.target,
                 firstTokenId,
-                ZERO_ADDRESS,
+                mockToken.target,
                 newPrice
             );
         });
 
         it('Should emit ItemUpdated event', async () => {
-            const { AlivelandMarketplace, AlivelandNFT, owner } = await loadFixture(listItemFixture);
+            const { AlivelandMarketplace, AlivelandNFT, mockToken, owner } = await loadFixture(listItemFixture);
             await expect(
                 AlivelandMarketplace.connect(owner).updateListing(
                     AlivelandNFT.target,
                     firstTokenId,
-                    ZERO_ADDRESS,
+                    mockToken.target,
                     newPrice
                 )
             ).to.emit(AlivelandMarketplace, "ItemUpdated").withArgs(
                 owner.address,
                 AlivelandNFT.target,
                 firstTokenId,
-                ZERO_ADDRESS,
+                mockToken.target,
                 newPrice
             );
         });
@@ -212,13 +246,13 @@ describe("Aliveland Marketplace Contract", () => {
 
     describe('Buying Item', () => {
         it('reverts when seller doesnt own the item', async () => {
-            const { AlivelandMarketplace, AlivelandNFT, owner, buyer, minter } = await loadFixture(listItemFixture);
+            const { AlivelandMarketplace, AlivelandNFT, mockToken, owner, buyer, minter } = await loadFixture(listItemFixture);
             await AlivelandNFT.connect(owner).safeTransferFrom(owner, minter, firstTokenId);
             await expect(
                 AlivelandMarketplace.connect(buyer).buyItem(
                     AlivelandNFT.target,
                     firstTokenId,
-                    ZERO_ADDRESS,
+                    mockToken.target,
                     owner,
                     { value: pricePerItem }
                 )
@@ -226,13 +260,13 @@ describe("Aliveland Marketplace Contract", () => {
         });
 
         it('reverts when buying before the scheduled time', async () => {
-            const { AlivelandMarketplace, AlivelandNFT, owner, buyer, minter } = await loadFixture(listItemFixture);
+            const { AlivelandMarketplace, AlivelandNFT, mockToken, owner, buyer, minter } = await loadFixture(listItemFixture);
             await AlivelandNFT.connect(owner).setApprovalForAll(AlivelandMarketplace.target, true);
             await AlivelandMarketplace.connect(owner).listItem(
                 AlivelandNFT.target,
                 secondTokenId,
                 '1',
-                ZERO_ADDRESS,
+                mockToken.target,
                 pricePerItem,
                 '1000000000000000'
             );
@@ -240,7 +274,7 @@ describe("Aliveland Marketplace Contract", () => {
                 AlivelandMarketplace.connect(buyer).buyItem(
                     AlivelandNFT.target,
                     secondTokenId,
-                    ZERO_ADDRESS,
+                    mockToken.target,
                     owner,
                     { value: pricePerItem }
                 )
@@ -248,23 +282,23 @@ describe("Aliveland Marketplace Contract", () => {
         });
 
         it('reverts when the amount is not enough', async () => {
-            const { AlivelandMarketplace, AlivelandNFT, owner, buyer, minter } = await loadFixture(listItemFixture);
+            const { AlivelandMarketplace, AlivelandNFT, mockToken, owner, buyer, minter } = await loadFixture(listItemFixture);
             await expect(
                 AlivelandMarketplace.connect(buyer).buyItem(
                     AlivelandNFT.target,
                     firstTokenId,
-                    ZERO_ADDRESS,
+                    mockToken.target,
                     owner
                 )
             ).to.be.reverted;
         });
 
         it('successfully purchase item', async () => {
-            const { AlivelandMarketplace, AlivelandNFT, owner, feeRecipient, buyer } = await loadFixture(listItemFixture);
+            const { AlivelandMarketplace, AlivelandNFT, mockToken, owner, feeRecipient, buyer } = await loadFixture(listItemFixture);
             await AlivelandMarketplace.connect(buyer).buyItem(
                 AlivelandNFT.target,
                 firstTokenId,
-                ZERO_ADDRESS,
+                mockToken.target,
                 owner,
                 { value: pricePerItem }
             );
@@ -274,12 +308,12 @@ describe("Aliveland Marketplace Contract", () => {
         });
 
         it('Should emit ItemSold event successfully', async () => {
-            const { AlivelandMarketplace, AlivelandNFT, owner, buyer } = await loadFixture(listItemFixture);
+            const { AlivelandMarketplace, AlivelandNFT, mockToken, owner, buyer } = await loadFixture(listItemFixture);
             await expect(
                 AlivelandMarketplace.connect(buyer).buyItem(
                     AlivelandNFT.target,
                     firstTokenId,
-                    ZERO_ADDRESS,
+                    mockToken.target,
                     owner,
                     { value: pricePerItem }
                 )
@@ -289,7 +323,7 @@ describe("Aliveland Marketplace Contract", () => {
                 AlivelandNFT.target,
                 firstTokenId,
                 '1',
-                ZERO_ADDRESS,
+                mockToken.target,
                 pricePerItem
             );
         });
