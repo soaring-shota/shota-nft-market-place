@@ -8,7 +8,7 @@
     "unit-test": "npx hardhat test",
     "deploy-mumbai": "npx hardhat run --network mumbai scripts/deploy_all.js",
     "deploy-polygon": "npx hardhat run --network polygon scripts/deploy_all.js",
-    "verify": "npx hardhat verify --network mumbai --constructor-args scripts/arguments_1155.js 0xC7a7ADE3b82BfAfe59bCeDD9D358F7e758241F19",
+    "verify": "npx hardhat verify --network mumbai --constructor-args scripts/arguments_721.js 0xb796E82267210e36B9c0B9e8134425Bf9381d50B",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -22,12 +22,15 @@
   },
   "homepage": "https://github.com/aliveland/aliveland-nft-contract#readme",
   "devDependencies": {
+    "@chainlink/contracts": "^0.8.0",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.2",
     "@nomicfoundation/hardhat-ethers": "^3.0.4",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.9",
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "@nomicfoundation/hardhat-verify": "^1.1.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "@nomiclabs/hardhat-truffle4": "^2.0.6",
+    "@nomiclabs/hardhat-web3-legacy": "^2.0.0",
     "@openzeppelin/contracts": "^4.9.3",
     "@openzeppelin/contracts-upgradeable": "^4.9.3",
     "@openzeppelin/hardhat-upgrades": "^2.2.1",
@@ -42,10 +45,10 @@
     "solidity-coverage": "^0.8.5",
     "ts-node": "^10.9.1",
     "typechain": "^8.3.1",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "web3": "^0.20.7"
   },
   "dependencies": {
-    "dotenv": "^16.3.1",
-    "web3": "^4.1.2"
+    "dotenv": "^16.3.1"
   }
 }

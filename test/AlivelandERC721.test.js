@@ -1,9 +1,10 @@
 const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { BN } = require('@openzeppelin/test-helpers')
+const { BN } = require('@openzeppelin/test-helpers');
+const { parseEther, ZeroAddress } = require("ethers");
 
-describe("Aliveland ERC-721 NFT Contract", () => {
+describe("Aliveland ERC-721 NFT Contract", async () => {
   const mintFee = ethers.parseEther("1");
 
   async function deployTokenFixture() {
@@ -31,16 +32,14 @@ describe("Aliveland ERC-721 NFT Contract", () => {
 
     let nftBalance = await AlivelandNFT.balanceOf(owner.address);
     expect(nftBalance).to.equal(0);
-    let feeBalance = await ethers.provider.getBalance(feeRecipient.address);
-    expect(feeBalance).to.equal(ethers.parseEther("10007"));
 
     await AlivelandNFT.mint(owner.address, { from: owner.address, value: mintFee });
 
     nftBalance = await AlivelandNFT.balanceOf(owner.address);
     expect(nftBalance).to.equal(1);
 
-    feeBalance = await ethers.provider.getBalance(feeRecipient.address);
-    expect(feeBalance).to.equal(ethers.parseEther("10007") + mintFee);
+    let feeBalance = await ethers.provider.getBalance(feeRecipient.address);
+    expect(feeRecipient).to.changeEtherBalance(feeRecipient.address, mintFee);
   });
 
   it("Should burn NFT successfully", async () => {

@@ -1,10 +1,16 @@
-require('dotenv').config();
-const { ethers }  = require("hardhat");
-const { BASE_URI, MINT_FEE, FEE_RECIPIENT, PLATFORM_FEE, AUCTION_ADDRESS, MARKETPLACE_ADDRESS } = process.env;
+const { 
+  BASE_URI, 
+  MINT_FEE, 
+  FEE_RECIPIENT, 
+  AUCTION_ADDRESS, 
+  MARKETPLACE_ADDRESS, 
+  COLLECTION_FEE 
+} = require('./constants');
+const { ethers } = require('hardhat');
 
 async function main() {
   const mintFee = ethers.parseEther(MINT_FEE);
-  const platformFee = ethers.parseEther(PLATFORM_FEE);
+  const collectionFee = ethers.parseEther(COLLECTION_FEE);
 
   const AlivelandERC721Factory = await ethers.getContractFactory("AlivelandERC721Factory");
   const AlivelandERC721FactoryDeployed = await AlivelandERC721Factory.deploy(
@@ -12,7 +18,7 @@ async function main() {
     MARKETPLACE_ADDRESS,
     BASE_URI,
     mintFee,
-    platformFee,
+    collectionFee,
     FEE_RECIPIENT
   );
   await AlivelandERC721FactoryDeployed.waitForDeployment();

@@ -1,6 +1,12 @@
-require('dotenv').config();
-const { ethers }  = require("hardhat");
-const { BASE_URI, MINT_FEE, FEE_RECIPIENT, AUCTION_ADDRESS, MARKETPLACE_ADDRESS, DEPLOYER_ADDRESS } = process.env;
+const { 
+  BASE_URI, 
+  MINT_FEE, 
+  FEE_RECIPIENT, 
+  AUCTION_ADDRESS, 
+  MARKETPLACE_ADDRESS, 
+  DEPLOYER_ADDRESS 
+} = require('./constants');
+const { ethers } = require("hardhat");
 
 async function main() {
   const mintFee = ethers.parseEther(MINT_FEE);

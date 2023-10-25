@@ -2,7 +2,7 @@ const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helper
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("Aliveland ERC-1155 NFT Contract", () => {
+describe("Aliveland ERC-1155 NFT Contract", async () => {
   const mintFee = ethers.parseEther("1");
   const mintFee3 = ethers.parseEther("3");
   const mintFee7 = ethers.parseEther("7");
