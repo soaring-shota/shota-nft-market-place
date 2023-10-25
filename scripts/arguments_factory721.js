@@ -4,19 +4,18 @@ const {
   FEE_RECIPIENT, 
   AUCTION_ADDRESS, 
   MARKETPLACE_ADDRESS, 
-  DEPLOYER_ADDRESS 
+  COLLECTION_FEE 
 } = require('./constants');
 const { ethers } = require('hardhat');
 
 const mintFee = ethers.parseEther(MINT_FEE);
+const collectionFee = ethers.parseEther(COLLECTION_FEE);
 
 module.exports = [
-  "Aliveland NFT",
-  "ALNFT",
   AUCTION_ADDRESS,
   MARKETPLACE_ADDRESS,
   BASE_URI,
   mintFee,
-  FEE_RECIPIENT,
-  DEPLOYER_ADDRESS
+  collectionFee,
+  FEE_RECIPIENT
 ];
