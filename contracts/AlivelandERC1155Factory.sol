@@ -15,6 +15,8 @@ contract AlivelandERC1155Factory is Ownable {
     bytes4 private constant INTERFACE_ID_ERC1155 = 0xd9b67a26;
     
     mapping(address => bool) public exists;
+    mapping(address => uint256) public indexes;
+    mapping(address => mapping(uint256 => address)) public contracts;    
     
     event ContractCreated(address creator, address nft);
     event ContractDisabled(address caller, address nft);
@@ -52,7 +54,7 @@ contract AlivelandERC1155Factory is Ownable {
         feeRecipient = _feeRecipient;
     }
 
-    function createNFTContract()
+    function createNFTContract(string memory _name, string memory _symbol)
         external
         payable
         returns (address)
@@ -62,12 +64,17 @@ contract AlivelandERC1155Factory is Ownable {
         require(success, "Transfer failed");
 
         AlivelandERC1155 nft = new AlivelandERC1155(
+            _name,
+            _symbol,
             baseURI,
             mintFee,
             feeRecipient,
             msg.sender
         );
         exists[address(nft)] = true;
+        contracts[msg.sender][indexes[msg.sender]] = address(nft);
+        indexes[msg.sender]++;
+
         emit ContractCreated(_msgSender(), address(nft));
         return address(nft);
     }
@@ -89,5 +96,13 @@ contract AlivelandERC1155Factory is Ownable {
         require(exists[_tokenContractAddress], "AlivelandNFT contract is not registered");
         exists[_tokenContractAddress] = false;
         emit ContractDisabled(_msgSender(), _tokenContractAddress);
+    }
+
+    function getContractList(address _creator) external view returns (address[] memory) {
+        address[] memory ret = new address[](indexes[_creator]);
+        for (uint256 i = 0; i < indexes[_creator]; i++) {
+            ret[i] = contracts[_creator][i];
+        }
+        return ret;
     }
 }

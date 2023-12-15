@@ -16,13 +16,20 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
     uint256 public mintFee;
     string public baseTokenURI;
     address payable public feeRecipient;
+    string public ipfsUrl;
+    string public name;
+    string public symbol;
     
     constructor(
+        string memory _name,
+        string memory _symbol,
         string memory _uri,
         uint256 _mintFee,
         address payable _feeRecipient,
         address _deployer
     ) ERC1155(_uri) {
+        name = _name;
+        symbol = _symbol;
         mintFee = _mintFee;
         baseTokenURI = _uri;
         feeRecipient = _feeRecipient;
@@ -34,6 +41,14 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
         _setupRole(PAUSER_ROLE, _deployer);
     }
 
+    function updateCollectionIpfsUrl(string memory _ipfsUrl) external onlyOwner {
+        ipfsUrl = _ipfsUrl;
+    }
+
+    function getCollectionIpfsUrl() external onlyOwner view returns (string memory) {
+        return ipfsUrl;
+    }
+
     function uri(uint256 _tokenId) override public view returns (string memory) {
         return string(
             abi.encodePacked(baseTokenURI, Strings.toString(_tokenId), ".json")
@@ -42,6 +57,10 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
 
     function setURI(string memory newuri) public onlyOwner {
         _setURI(newuri);
+    }
+
+    function getName() public view returns (string memory) {
+        return name;
     }
 
     function mint(address _to, uint256 _id, uint256 _amount, bytes memory _data) public payable virtual {

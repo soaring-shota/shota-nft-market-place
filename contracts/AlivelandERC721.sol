@@ -36,6 +36,7 @@ contract AlivelandERC721 is
     uint256 public mintFee;
     address payable public feeRecipient;
     string public baseExtension = ".json";
+    string public ipfsUrl;
     
     mapping(uint256 => address) private owners;
     mapping(address => uint256) private balances;
@@ -80,6 +81,18 @@ contract AlivelandERC721 is
     function updateFeeRecipient(address payable _feeRecipient) external onlyOwner {
         feeRecipient = _feeRecipient;
         emit UpdateFeeRecipient(_feeRecipient);
+    }
+
+    function updateCollectionIpfsUrl(string memory _ipfsUrl) external onlyOwner {
+        ipfsUrl = _ipfsUrl;
+    }
+
+    function getCollectionIpfsUrl() external onlyOwner view returns (string memory) {
+        return ipfsUrl;
+    }
+
+    function getName() public view virtual returns (string memory) {
+        return ERC721.name();
     }
     
     function tokenURI(uint256 _tokenId) public view virtual override(ERC721, ERC721URIStorage) returns (string memory) {

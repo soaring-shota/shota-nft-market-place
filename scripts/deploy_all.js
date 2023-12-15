@@ -59,6 +59,8 @@ async function main() {
   ///////////////////////////ERC1155 Token Contract////////////////////////////
   const AlivelandERC1155 = await ethers.getContractFactory("AlivelandERC1155");
   const AlivelandERC1155Deployed = await AlivelandERC1155.deploy(
+    "Aliveland NFT",
+    "ALNFT",
     BASE_URI,
     mintFee,
     FEE_RECIPIENT,
