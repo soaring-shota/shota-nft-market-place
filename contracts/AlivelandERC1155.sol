@@ -19,6 +19,7 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
     string public ipfsUrl;
     string public name;
     string public symbol;
+    mapping (uint256 => string) private cid;
     
     constructor(
         string memory _name,
@@ -41,17 +42,9 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
         _setupRole(PAUSER_ROLE, _deployer);
     }
 
-    function updateCollectionIpfsUrl(string memory _ipfsUrl) external onlyOwner {
-        ipfsUrl = _ipfsUrl;
-    }
-
-    function getCollectionIpfsUrl() external onlyOwner view returns (string memory) {
-        return ipfsUrl;
-    }
-
     function uri(uint256 _tokenId) override public view returns (string memory) {
         return string(
-            abi.encodePacked(baseTokenURI, Strings.toString(_tokenId), ".json")
+            abi.encodePacked(baseTokenURI, cid[_tokenId], ".json")
         );
     }
 
@@ -63,11 +56,12 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
         return name;
     }
 
-    function mint(address _to, uint256 _id, uint256 _amount, bytes memory _data) public payable virtual {
+    function mint(address _to, uint256 _id, uint256 _amount, string memory _cid) public payable virtual {
         require(hasRole(MINTER_ROLE, _msgSender()), "AlivelandERC1155: must have minter role to mint");
         require(msg.value >= (mintFee * _amount), "AlivelandERC1155: insufficient funds to mint");
         
-        _mint(_to, _id, _amount, _data);
+        cid[_id] = _cid;
+        _mint(_to, _id, _amount, "");
 
         (bool success,) = feeRecipient.call{value : msg.value}("");
         require(success, "AlivelandERC1155: transfer failed");

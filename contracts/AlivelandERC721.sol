@@ -37,6 +37,7 @@ contract AlivelandERC721 is
     address payable public feeRecipient;
     string public baseExtension = ".json";
     string public ipfsUrl;
+    mapping (uint256 => string) private cid;
     
     mapping(uint256 => address) private owners;
     mapping(address => uint256) private balances;
@@ -83,37 +84,30 @@ contract AlivelandERC721 is
         emit UpdateFeeRecipient(_feeRecipient);
     }
 
-    function updateCollectionIpfsUrl(string memory _ipfsUrl) external onlyOwner {
-        ipfsUrl = _ipfsUrl;
-    }
-
-    function getCollectionIpfsUrl() external onlyOwner view returns (string memory) {
-        return ipfsUrl;
-    }
-
     function getName() public view virtual returns (string memory) {
         return ERC721.name();
     }
     
-    function tokenURI(uint256 _tokenId) public view virtual override(ERC721, ERC721URIStorage) returns (string memory) {
+    function tokenURI(uint256 _tokenId) public view virtual override (ERC721, ERC721URIStorage) returns (string memory) {
         _requireMinted(_tokenId);
 
         string memory base = _baseURI();
         
         if (bytes(base).length > 0) {
-            return string(abi.encodePacked(base, _tokenId.toString(), baseExtension));
+            return string(abi.encodePacked(base, cid[_tokenId], baseExtension));
         }
 
         return super.tokenURI(_tokenId);
     }
 
-    function mint(address _to) public payable virtual {
+    function mint(address _to, string memory _cid) public payable virtual {
         require(hasRole(MINTER_ROLE, _msgSender()), "AlivelandERC721: must have minter role to mint");
         require(msg.value >= mintFee, "AlivelandERC721: insufficient funds to mint");
 
         uint256 newTokenId = tokenIdTracker.current();
         _mint(_to, newTokenId);
         
+        cid[newTokenId] = _cid;
         string memory newTokenURI = tokenURI(newTokenId);
         _setTokenURI(newTokenId, newTokenURI);
 
