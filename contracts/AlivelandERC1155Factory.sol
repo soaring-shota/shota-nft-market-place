@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./AlivelandERC1155.sol";
 
 contract AlivelandERC1155Factory is Ownable {
-    address public marketplace;
     string public baseURI;
     uint256 public mintFee;
     uint256 public platformFee;
@@ -19,25 +18,19 @@ contract AlivelandERC1155Factory is Ownable {
     mapping(address => mapping(uint256 => address)) public contracts;  
     mapping (address => string) public ipfsUrl;  
     
-    event ContractCreated(address creator, address nft, string name, bool iserc721);
+    event ContractCreated(address creator, address nft);
     event ContractDisabled(address caller, address nft);
 
     constructor(
-        address _marketplace,
         string memory _baseURI,
         uint256 _mintFee,
         uint256 _platformFee,
         address payable _feeRecipient
     ) {
-        marketplace = _marketplace;
         baseURI = _baseURI;
         mintFee = _mintFee;
         platformFee = _platformFee;
         feeRecipient = _feeRecipient;
-    }
-
-    function updateMarketplace(address _marketplace) external onlyOwner {
-        marketplace = _marketplace;
     }
 
     function updateMintFee(uint256 _mintFee) external onlyOwner {
@@ -85,18 +78,21 @@ contract AlivelandERC1155Factory is Ownable {
         ipfsUrl[address(nft)] = _ipfsUrl;
         indexes[msg.sender]++;
 
-        emit ContractCreated(_msgSender(), address(nft), _name, false);
+        emit ContractCreated(_msgSender(), address(nft));
         return address(nft);
     }
 
-    function registerERC1155Contract(address _tokenContractAddress, string memory _name)
+    function registerERC1155Contract(address _tokenContractAddress, string memory _ipfsUrl)
         external
         onlyOwner
     {
         require(!exists[_tokenContractAddress], "AlivelandERC1155 contract already registered");
         require(IERC165(_tokenContractAddress).supportsInterface(INTERFACE_ID_ERC1155), "Not an ERC1155 contract");
         exists[_tokenContractAddress] = true;
-        emit ContractCreated(_msgSender(), _tokenContractAddress, _name, false);
+        contracts[msg.sender][indexes[msg.sender]] = _tokenContractAddress;
+        ipfsUrl[_tokenContractAddress] = _ipfsUrl;
+        indexes[msg.sender]++;
+        emit ContractCreated(_msgSender(), _tokenContractAddress);
     }
 
     function disableTokenContract(address _tokenContractAddress)

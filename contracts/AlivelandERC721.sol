@@ -30,18 +30,21 @@ contract AlivelandERC721 is
 
     Counters.Counter private tokenIdTracker;
 
-    address auction;
-    address marketplace;
     string private baseTokenURI;
     uint256 public mintFee;
     address payable public feeRecipient;
-    string public baseExtension = ".json";
-    string public ipfsUrl;
     mapping (uint256 => string) private cid;
     
     mapping(uint256 => address) private owners;
     mapping(address => uint256) private balances;
     mapping(uint256 => address) private tokenApprovals;
+
+    event Minted(
+        uint256 tokenId,
+        address beneficiary,
+        string  tokenUri,
+        address minter
+    );
 
     event UpdateMintFee(
         uint256 mintFee
@@ -54,15 +57,11 @@ contract AlivelandERC721 is
     constructor(
         string memory _name, 
         string memory _symbol,
-        address _auction,
-        address _marketplace,
         string memory _baseTokenURI,
         uint256 _mintFee,
         address payable _feeRecipient,
         address _deployer
     ) ERC721(_name, _symbol) {
-        auction = _auction;
-        marketplace = _marketplace;
         baseTokenURI = _baseTokenURI;
         mintFee = _mintFee;
         feeRecipient = _feeRecipient;
@@ -83,10 +82,6 @@ contract AlivelandERC721 is
         feeRecipient = _feeRecipient;
         emit UpdateFeeRecipient(_feeRecipient);
     }
-
-    function getName() public view virtual returns (string memory) {
-        return ERC721.name();
-    }
     
     function tokenURI(uint256 _tokenId) public view virtual override (ERC721, ERC721URIStorage) returns (string memory) {
         _requireMinted(_tokenId);
@@ -94,13 +89,13 @@ contract AlivelandERC721 is
         string memory base = _baseURI();
         
         if (bytes(base).length > 0) {
-            return string(abi.encodePacked(base, cid[_tokenId], baseExtension));
+            return string(abi.encodePacked(base, cid[_tokenId]));
         }
 
         return super.tokenURI(_tokenId);
     }
 
-    function mint(address _to, string memory _cid) public payable virtual {
+    function mint(address _to, string calldata _cid) public payable virtual returns (uint256) {
         require(hasRole(MINTER_ROLE, _msgSender()), "AlivelandERC721: must have minter role to mint");
         require(msg.value >= mintFee, "AlivelandERC721: insufficient funds to mint");
 
@@ -115,6 +110,10 @@ contract AlivelandERC721 is
         require(success, "AlivelandERC721: transfer failed");
 
         tokenIdTracker.increment();
+
+        emit Minted(newTokenId, _to, newTokenURI, _msgSender());
+
+        return newTokenId;
     }
 
     function burn(uint256 _tokenId) public virtual override {

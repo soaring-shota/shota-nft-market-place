@@ -46,8 +46,6 @@ async function main() {
   const AlivelandERC721Deployed = await AlivelandERC721.deploy(
     "Aliveland NFT",
     "ALNFT",
-    AlivelandAuctionDeployed.target,
-    AlivelandMarketplaceDeployed.target,
     BASE_URI,
     mintFee,
     FEE_RECIPIENT,
@@ -72,8 +70,6 @@ async function main() {
   ///////////////////////////ERC-721 Factory Contract////////////////////////////
   const AlivelandERC721Factory = await ethers.getContractFactory("AlivelandERC721Factory");
   const AlivelandERC721FactoryDeployed = await AlivelandERC721Factory.deploy(
-    AlivelandAuctionDeployed.target,
-    AlivelandMarketplaceDeployed.target,
     BASE_URI,
     mintFee,
     collectionFee,
@@ -85,7 +81,6 @@ async function main() {
   ///////////////////////////ERC-1155 Factory Contract////////////////////////////
   const AlivelandERC1155Factory = await ethers.getContractFactory("AlivelandERC1155Factory");
   const AlivelandERC1155FactoryDeployed = await AlivelandERC1155Factory.deploy(
-    AlivelandMarketplaceDeployed.target,
     BASE_URI,
     mintFee,
     collectionFee,
