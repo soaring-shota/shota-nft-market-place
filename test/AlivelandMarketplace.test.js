@@ -59,7 +59,7 @@ describe("Aliveland Marketplace Contract", () => {
             await expect(
                 AlivelandMarketplace.connect(owner).listItem(
                     AlivelandNFT.target,
-                    0,
+                    'art',
                     firstTokenId,
                     '1',
                     mockToken.target,
@@ -74,7 +74,7 @@ describe("Aliveland Marketplace Contract", () => {
             await AlivelandNFT.connect(owner).setApprovalForAll(AlivelandMarketplace.target, true);
             await AlivelandMarketplace.connect(owner).listItem(
                 AlivelandNFT.target,
-                0,
+                'art',
                 firstTokenId,
                 '1',
                 mockToken.target,
@@ -89,7 +89,7 @@ describe("Aliveland Marketplace Contract", () => {
             await expect(
                 AlivelandMarketplace.connect(owner).listItem(
                     AlivelandNFT.target,
-                    0,
+                    'art',
                     firstTokenId,
                     '1',
                     mockToken.target,
@@ -99,7 +99,7 @@ describe("Aliveland Marketplace Contract", () => {
             ).to.emit(AlivelandMarketplace, "ItemListed").withArgs(
                 owner.address,
                 AlivelandNFT.target,
-                0,
+                'art',
                 firstTokenId,
                 '1',
                 mockToken.target,
@@ -151,7 +151,7 @@ describe("Aliveland Marketplace Contract", () => {
         await AlivelandNFT.setApprovalForAll(AlivelandMarketplace.target, true);
         await AlivelandMarketplace.connect(owner).listItem(
             AlivelandNFT.target,
-            0,
+            'art',
             firstTokenId,
             '1',
             mockToken.target,
@@ -258,7 +258,7 @@ describe("Aliveland Marketplace Contract", () => {
             await AlivelandNFT.connect(owner).setApprovalForAll(AlivelandMarketplace.target, true);
             await AlivelandMarketplace.connect(owner).listItem(
                 AlivelandNFT.target,
-                0,
+                'art',
                 secondTokenId,
                 '1',
                 mockToken.target,

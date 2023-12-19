@@ -1,7 +1,7 @@
 module.exports = {
   FEE_RECIPIENT: '0x9dD47C30752924E90FF7F4929203E1Fc08fa0104',
-  AUCTION_ADDRESS: '0xF0b2e44f3bc474a08c72a806d20984Ea0aE65743',
-  MARKETPLACE_ADDRESS: '0xdBf9d39A84b64438F97F785Fa433B534d4E070B1',
+  AUCTION_ADDRESS: '0xef994aC59A3989106F89ae6A24f132617167B66E',
+  MARKETPLACE_ADDRESS: '0x399b84aa37Af3963f81ADD3C16D6c685C4cDfC7B',
   ALIVELAND_ADDRESS_REGISTRY: '0xF7e78E48d405C98D05a7c79252aD4AF7De71C409',
   DEPLOYER_ADDRESS: '0x562461317d060ef040e6c4b1aea362F2b2Af823e',
   PROXY_ADMIN: '0x41396DE0D6A956923B840Ba30921D1a3d7EfA706',
@@ -13,8 +13,8 @@ module.exports = {
   COLLECTION_FEE: '0.001'
 };
 
-// deployed Aliveland marketplace contract address:  0xdBf9d39A84b64438F97F785Fa433B534d4E070B1
-// deployed Aliveland auction contract address:  0xF0b2e44f3bc474a08c72a806d20984Ea0aE65743
+// deployed Aliveland marketplace contract address:  0x399b84aa37Af3963f81ADD3C16D6c685C4cDfC7B
+// deployed Aliveland auction contract address:  0xef994aC59A3989106F89ae6A24f132617167B66E
 // deployed Aliveland token registry contract address:  0xaa9d645BB74834eF8BdA51fdd83f27BEe866f3D4
 // deployed Aliveland address registry contract address:  0xF7e78E48d405C98D05a7c79252aD4AF7De71C409
 // deployed Aliveland NFT(erc-721) contract address:  0xef4B050Cab4C3ed521e0b8BB461b42915e34BC4c

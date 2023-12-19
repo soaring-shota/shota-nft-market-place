@@ -68,7 +68,7 @@ describe("Aliveland Auction Contract", () => {
                 AlivelandAuction.createAuction(
                     AlivelandNFT.target,
                     firstTokenId,
-                    0,
+                    'art',
                     mockToken.target,
                     reservePrice,
                     '1',
@@ -87,7 +87,7 @@ describe("Aliveland Auction Contract", () => {
                 AlivelandAuction.createAuction(
                     AlivelandNFT.target,
                     firstTokenId,
-                    0,
+                    'art',
                     mockToken.target,
                     reservePrice,
                     '1',
@@ -106,7 +106,7 @@ describe("Aliveland Auction Contract", () => {
                 AlivelandAuction.createAuction(
                     AlivelandNFT.target,
                     firstTokenId,
-                    0,
+                    'art',
                     mockToken.target,
                     reservePrice,
                     '1',
@@ -125,7 +125,7 @@ describe("Aliveland Auction Contract", () => {
                 AlivelandAuction.createAuction(
                     AlivelandNFT.target,
                     firstTokenId,
-                    0,
+                    'art',
                     mockToken.target,
                     reservePrice,
                     '12',
@@ -135,7 +135,7 @@ describe("Aliveland Auction Contract", () => {
             ).to.emit(AlivelandAuction, "AuctionCreated").withArgs(
                 AlivelandNFT.target,
                 firstTokenId,
-                0,
+                'art',
                 mockToken.target
             );
         });
@@ -185,7 +185,7 @@ describe("Aliveland Auction Contract", () => {
         await AlivelandAuction.createAuction(
             AlivelandNFT.target,
             firstTokenId,
-            0,
+            'art',
             mockToken.target,
             reservePrice,
             '12',
@@ -294,7 +294,7 @@ describe("Aliveland Auction Contract", () => {
         await AlivelandAuction.createAuction(
             AlivelandNFT.target,
             firstTokenId,
-            0,
+            'art',
             mockToken.target,
             reservePrice,
             '12',
