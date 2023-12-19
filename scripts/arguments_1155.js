@@ -9,8 +9,10 @@ const { ethers } = require('hardhat');
 const mintFee = ethers.parseEther(MINT_FEE);
 
 module.exports = [
-    BASE_URI,
-    mintFee,
-    FEE_RECIPIENT,
-    DEPLOYER_ADDRESS
+  "Aliveland NFT",
+  "ALNFT",
+  BASE_URI,
+  mintFee,
+  FEE_RECIPIENT,
+  DEPLOYER_ADDRESS
   ];

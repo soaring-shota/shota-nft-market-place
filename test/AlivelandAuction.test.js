@@ -4,17 +4,12 @@ const { ethers } = require("hardhat");
 const {
     constants,
     expectRevert,
-    balance,
-    BN
 } = require('@openzeppelin/test-helpers');
-const { parseEther, ZeroAddress } = require("ethers");
-const ether = require("@openzeppelin/test-helpers/src/ether");
-const { ZERO_ADDRESS, MAX_UINT256 } = constants;
+const { ZERO_ADDRESS } = constants;
 const BiddingContractMock = artifacts.require('BiddingContractMock');
 
 describe("Aliveland Auction Contract", () => {
     const firstTokenId = '0';
-    const secondTokenId = '1';
     const platformFee = '25';
     const pricePerItem = ethers.parseEther("1");
     const reservePrice = ethers.parseEther("1");
@@ -37,16 +32,14 @@ describe("Aliveland Auction Contract", () => {
             [
                 "Aliveland NFT",
                 "ALNFT",
-                AlivelandAuction.target,
-                AlivelandMarketplace.target,
                 "ipfs",
                 pricePerItem,
                 feeRecipient.address,
                 owner.address
             ]
         );
-        await AlivelandNFT.mint(owner.address, { from: owner.address, value: pricePerItem });
-        await AlivelandNFT.mint(owner.address, { from: owner.address, value: pricePerItem });
+        await AlivelandNFT.mint(owner.address, "test1", { from: owner.address, value: pricePerItem });
+        await AlivelandNFT.mint(owner.address, "test2", { from: owner.address, value: pricePerItem });
 
         const mockToken = await ethers.deployContract(
             "MockERC20",
@@ -75,6 +68,7 @@ describe("Aliveland Auction Contract", () => {
                 AlivelandAuction.createAuction(
                     AlivelandNFT.target,
                     firstTokenId,
+                    'art',
                     mockToken.target,
                     reservePrice,
                     '1',
@@ -92,12 +86,13 @@ describe("Aliveland Auction Contract", () => {
             await expectRevert(
                 AlivelandAuction.createAuction(
                     AlivelandNFT.target,
-                        firstTokenId,
-                        mockToken.target,
-                        reservePrice,
-                        '1',
-                        minBidReserve,
-                        '10'
+                    firstTokenId,
+                    'art',
+                    mockToken.target,
+                    reservePrice,
+                    '1',
+                    minBidReserve,
+                    '10'
                 ),
                 "end time must be greater than start (by 5 minutes)"
             );
@@ -111,6 +106,7 @@ describe("Aliveland Auction Contract", () => {
                 AlivelandAuction.createAuction(
                     AlivelandNFT.target,
                     firstTokenId,
+                    'art',
                     mockToken.target,
                     reservePrice,
                     '1',
@@ -129,6 +125,7 @@ describe("Aliveland Auction Contract", () => {
                 AlivelandAuction.createAuction(
                     AlivelandNFT.target,
                     firstTokenId,
+                    'art',
                     mockToken.target,
                     reservePrice,
                     '12',
@@ -138,6 +135,7 @@ describe("Aliveland Auction Contract", () => {
             ).to.emit(AlivelandAuction, "AuctionCreated").withArgs(
                 AlivelandNFT.target,
                 firstTokenId,
+                'art',
                 mockToken.target
             );
         });
@@ -156,16 +154,14 @@ describe("Aliveland Auction Contract", () => {
             [
                 "Aliveland NFT",
                 "ALNFT",
-                AlivelandAuction.target,
-                AlivelandMarketplace.target,
                 "ipfs",
                 pricePerItem,
                 feeRecipient.address,
                 owner.address
             ]
         );
-        await AlivelandNFT.mint(owner.address, { from: owner.address, value: pricePerItem });
-        await AlivelandNFT.mint(owner.address, { from: owner.address, value: pricePerItem });
+        await AlivelandNFT.mint(owner.address, "", { from: owner.address, value: pricePerItem });
+        await AlivelandNFT.mint(owner.address, "", { from: owner.address, value: pricePerItem });
 
         const mockToken = await ethers.deployContract(
             "MockERC20",
@@ -189,6 +185,7 @@ describe("Aliveland Auction Contract", () => {
         await AlivelandAuction.createAuction(
             AlivelandNFT.target,
             firstTokenId,
+            'art',
             mockToken.target,
             reservePrice,
             '12',
@@ -276,16 +273,14 @@ describe("Aliveland Auction Contract", () => {
             [
                 "Aliveland NFT",
                 "ALNFT",
-                AlivelandAuction.target,
-                AlivelandMarketplace.target,
                 "ipfs",
                 pricePerItem,
                 feeRecipient.address,
                 owner.address
             ]
         );
-        await AlivelandNFT.mint(owner.address, { from: owner.address, value: pricePerItem });
-        await AlivelandNFT.mint(owner.address, { from: owner.address, value: pricePerItem });
+        await AlivelandNFT.mint(owner.address, "", { from: owner.address, value: pricePerItem });
+        await AlivelandNFT.mint(owner.address, "", { from: owner.address, value: pricePerItem });
 
         const AlivelandTokenRegistry = await ethers.deployContract("AlivelandTokenRegistry");
         await AlivelandTokenRegistry.add(mockToken.target);
@@ -299,6 +294,7 @@ describe("Aliveland Auction Contract", () => {
         await AlivelandAuction.createAuction(
             AlivelandNFT.target,
             firstTokenId,
+            'art',
             mockToken.target,
             reservePrice,
             '12',

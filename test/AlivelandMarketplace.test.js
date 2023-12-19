@@ -1,14 +1,7 @@
 const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const {
-    BN,
-    constants,
-    expectEvent,
-    expectRevert,
-    balance,
-} = require('@openzeppelin/test-helpers');
-const { parseEther, ZeroAddress } = require("ethers");
+const { parseEther } = require("ethers");
 
 describe("Aliveland Marketplace Contract", () => {
     const firstTokenId = '0';
@@ -31,16 +24,14 @@ describe("Aliveland Marketplace Contract", () => {
             [
                 "Aliveland NFT",
                 "ALNFT",
-                auction.address,
-                marketplace.address,
                 "ipfs",
                 pricePerItem,
                 feeRecipient.address,
                 owner.address
             ]
         );
-        await AlivelandNFT.mint(owner.address, { from: owner.address, value: pricePerItem });
-        await AlivelandNFT.mint(owner.address, { from: owner.address, value: pricePerItem });
+        await AlivelandNFT.mint(owner.address, "test1", { from: owner.address, value: pricePerItem });
+        await AlivelandNFT.mint(owner.address, "test2", { from: owner.address, value: pricePerItem });
 
         const mockToken = await ethers.deployContract(
             "MockERC20",
@@ -68,6 +59,7 @@ describe("Aliveland Marketplace Contract", () => {
             await expect(
                 AlivelandMarketplace.connect(owner).listItem(
                     AlivelandNFT.target,
+                    'art',
                     firstTokenId,
                     '1',
                     mockToken.target,
@@ -82,6 +74,7 @@ describe("Aliveland Marketplace Contract", () => {
             await AlivelandNFT.connect(owner).setApprovalForAll(AlivelandMarketplace.target, true);
             await AlivelandMarketplace.connect(owner).listItem(
                 AlivelandNFT.target,
+                'art',
                 firstTokenId,
                 '1',
                 mockToken.target,
@@ -96,6 +89,7 @@ describe("Aliveland Marketplace Contract", () => {
             await expect(
                 AlivelandMarketplace.connect(owner).listItem(
                     AlivelandNFT.target,
+                    'art',
                     firstTokenId,
                     '1',
                     mockToken.target,
@@ -105,6 +99,7 @@ describe("Aliveland Marketplace Contract", () => {
             ).to.emit(AlivelandMarketplace, "ItemListed").withArgs(
                 owner.address,
                 AlivelandNFT.target,
+                'art',
                 firstTokenId,
                 '1',
                 mockToken.target,
@@ -127,16 +122,14 @@ describe("Aliveland Marketplace Contract", () => {
             [
                 "Aliveland NFT",
                 "ALNFT",
-                auction.address,
-                marketplace.address,
                 "ipfs",
                 pricePerItem,
                 feeRecipient.address,
                 owner.address
             ]
         );
-        await AlivelandNFT.mint(owner.address, { from: owner.address, value: pricePerItem });
-        await AlivelandNFT.mint(owner.address, { from: owner.address, value: pricePerItem });
+        await AlivelandNFT.mint(owner.address, "test1", { from: owner.address, value: pricePerItem });
+        await AlivelandNFT.mint(owner.address, "test2", { from: owner.address, value: pricePerItem });
 
         const mockToken = await ethers.deployContract(
             "MockERC20",
@@ -158,6 +151,7 @@ describe("Aliveland Marketplace Contract", () => {
         await AlivelandNFT.setApprovalForAll(AlivelandMarketplace.target, true);
         await AlivelandMarketplace.connect(owner).listItem(
             AlivelandNFT.target,
+            'art',
             firstTokenId,
             '1',
             mockToken.target,
@@ -264,6 +258,7 @@ describe("Aliveland Marketplace Contract", () => {
             await AlivelandNFT.connect(owner).setApprovalForAll(AlivelandMarketplace.target, true);
             await AlivelandMarketplace.connect(owner).listItem(
                 AlivelandNFT.target,
+                'art',
                 secondTokenId,
                 '1',
                 mockToken.target,

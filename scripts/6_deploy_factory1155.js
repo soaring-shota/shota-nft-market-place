@@ -2,7 +2,6 @@ const {
   BASE_URI, 
   MINT_FEE, 
   FEE_RECIPIENT,
-  MARKETPLACE_ADDRESS, 
   COLLECTION_FEE 
 } = require('./constants');
 const { ethers } = require("hardhat");
@@ -13,7 +12,6 @@ async function main() {
 
   const AlivelandERC1155Factory = await ethers.getContractFactory("AlivelandERC1155Factory");
   const AlivelandERC1155FactoryDeployed = await AlivelandERC1155Factory.deploy(
-    MARKETPLACE_ADDRESS,
     BASE_URI,
     mintFee,
     collectionFee,

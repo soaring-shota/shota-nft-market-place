@@ -81,6 +81,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
     event AuctionCreated(
         address indexed nftAddress,
         uint256 indexed tokenId,
+        string  nftType,
         address payToken
     );
 
@@ -174,6 +175,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
     function createAuction(
         address _nftAddress,
         uint256 _tokenId,
+        string memory _nftType,
         address _payToken,
         uint256 _reservePrice,
         uint256 _startTimestamp,
@@ -199,6 +201,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         _createAuction(
             _nftAddress,
             _tokenId,
+            _nftType,
             _payToken,
             _reservePrice,
             _startTimestamp,
@@ -575,6 +578,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
     function _createAuction(
         address _nftAddress,
         uint256 _tokenId,
+        string memory _nftType,
         address _payToken,
         uint256 _reservePrice,
         uint256 _startTimestamp,
@@ -608,7 +612,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
             resulted: false
         });
 
-        emit AuctionCreated(_nftAddress, _tokenId, _payToken);
+        emit AuctionCreated(_nftAddress, _tokenId, _nftType,  _payToken);
     }
 
     function _cancelAuction(address _nftAddress, uint256 _tokenId) private {

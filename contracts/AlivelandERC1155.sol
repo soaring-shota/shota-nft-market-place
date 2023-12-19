@@ -8,21 +8,45 @@ import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155Burnable, ERC1155Pausable {
+    using Counters for Counters.Counter;
+
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+
+    Counters.Counter private tokenIdTracker;
 
     uint256 public mintFee;
     string public baseTokenURI;
     address payable public feeRecipient;
+    string public name;
+    string public symbol;
+    mapping (uint256 => string) private cid;
+
+    event Minted(
+        uint256 tokenId,
+        address beneficiary,
+        string  tokenUri,
+        address minter
+    );
+
+    event BatchMinted(
+        address beneficiary,
+        address minter
+    );
     
     constructor(
+        string memory _name,
+        string memory _symbol,
         string memory _uri,
         uint256 _mintFee,
         address payable _feeRecipient,
         address _deployer
     ) ERC1155(_uri) {
+        name = _name;
+        symbol = _symbol;
         mintFee = _mintFee;
         baseTokenURI = _uri;
         feeRecipient = _feeRecipient;
@@ -36,7 +60,7 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
 
     function uri(uint256 _tokenId) override public view returns (string memory) {
         return string(
-            abi.encodePacked(baseTokenURI, Strings.toString(_tokenId), ".json")
+            abi.encodePacked(baseTokenURI, cid[_tokenId])
         );
     }
 
@@ -44,14 +68,25 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
         _setURI(newuri);
     }
 
-    function mint(address _to, uint256 _id, uint256 _amount, bytes memory _data) public payable virtual {
+    function mint(address _to, uint256 _amount, string memory _cid) public payable virtual {
+        uint256 newTokenId = tokenIdTracker.current();
+
+        mintById(_to, newTokenId, _amount, _cid);
+
+        tokenIdTracker.increment();
+    }
+
+    function mintById(address _to, uint256 _id, uint256 _amount, string memory _cid) public payable virtual {
         require(hasRole(MINTER_ROLE, _msgSender()), "AlivelandERC1155: must have minter role to mint");
         require(msg.value >= (mintFee * _amount), "AlivelandERC1155: insufficient funds to mint");
         
-        _mint(_to, _id, _amount, _data);
+        cid[_id] = _cid;
+        _mint(_to, _id, _amount, "");
 
         (bool success,) = feeRecipient.call{value : msg.value}("");
         require(success, "AlivelandERC1155: transfer failed");
+
+        emit Minted(_id, _to, uri(_id), _msgSender());
     }
 
     function mintBatch(address _to, uint256[] memory _ids, uint256[] memory _amounts, bytes memory _data) public payable virtual {
@@ -68,6 +103,8 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
 
         (bool success,) = feeRecipient.call{value : msg.value}("");
         require(success, "AlivelandERC1155: transfer failed to mintBatch");
+
+        emit BatchMinted(_to, _msgSender());
     }
 
     function pause() public virtual {
