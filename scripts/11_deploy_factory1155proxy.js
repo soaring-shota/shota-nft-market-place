@@ -12,7 +12,7 @@ async function main() {
     new Uint8Array([])
   );
   await TransparentUpgradeableProxyContractDeployed.waitForDeployment();
-  console.log("deployed Upgradeable Proxy contract address: ", TransparentUpgradeableProxyContractDeployed.target);
+  console.log("deployed factory1155 Proxy contract address: ", TransparentUpgradeableProxyContractDeployed.target);
 }
 
 main().catch((error) => {

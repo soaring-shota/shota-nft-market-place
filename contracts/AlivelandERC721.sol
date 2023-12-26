@@ -31,6 +31,7 @@ contract AlivelandERC721 is
     Counters.Counter private tokenIdTracker;
 
     string private baseTokenURI;
+    string public metadataUrl;
     uint256 public mintFee;
     address payable public feeRecipient;
     mapping (uint256 => string) private cid;
@@ -58,6 +59,7 @@ contract AlivelandERC721 is
         string memory _name, 
         string memory _symbol,
         string memory _baseTokenURI,
+        string memory _metadataUrl,
         uint256 _mintFee,
         address payable _feeRecipient,
         address _deployer
@@ -65,12 +67,17 @@ contract AlivelandERC721 is
         baseTokenURI = _baseTokenURI;
         mintFee = _mintFee;
         feeRecipient = _feeRecipient;
+        metadataUrl = _metadataUrl;
 
         super._transferOwnership(_deployer);
 
         _setupRole(DEFAULT_ADMIN_ROLE, _deployer);
         _setupRole(MINTER_ROLE, _deployer);
         _setupRole(PAUSER_ROLE, _deployer);
+    }
+
+    function updateMetadataUrl(string memory _url) external onlyOwner {
+        metadataUrl = _url;
     }
 
     function updateMintFee(uint256 _mintFee) external onlyOwner {

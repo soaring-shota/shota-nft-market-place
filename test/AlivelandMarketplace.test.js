@@ -25,6 +25,7 @@ describe("Aliveland Marketplace Contract", () => {
                 "Aliveland NFT",
                 "ALNFT",
                 "ipfs",
+                "ipfs://metadata",
                 pricePerItem,
                 feeRecipient.address,
                 owner.address
@@ -123,6 +124,7 @@ describe("Aliveland Marketplace Contract", () => {
                 "Aliveland NFT",
                 "ALNFT",
                 "ipfs",
+                "ipfs://metadata",
                 pricePerItem,
                 feeRecipient.address,
                 owner.address

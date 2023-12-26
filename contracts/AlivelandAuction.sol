@@ -81,8 +81,12 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
     event AuctionCreated(
         address indexed nftAddress,
         uint256 indexed tokenId,
-        string  nftType,
-        address payToken
+        string  mediaType,
+        uint256 startTime,
+        uint256 endTime,
+        uint256 reservePrice,
+        address indexed owner,
+        uint256 lockTime
     );
 
     event UpdateAuctionEndTime(
@@ -116,6 +120,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         address indexed nftAddress,
         uint256 indexed tokenId,
         address indexed bidder,
+        address owner,
         uint256 bid
     );
 
@@ -175,7 +180,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
     function createAuction(
         address _nftAddress,
         uint256 _tokenId,
-        string memory _nftType,
+        string memory _mediaType,
         address _payToken,
         uint256 _reservePrice,
         uint256 _startTimestamp,
@@ -201,7 +206,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         _createAuction(
             _nftAddress,
             _tokenId,
-            _nftType,
+            _mediaType,
             _payToken,
             _reservePrice,
             _startTimestamp,
@@ -213,6 +218,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
     function placeBid(
         address _nftAddress,
         uint256 _tokenId,
+        address _owner,
         uint256 _bidAmount
     ) external nonReentrant whenNotPaused {
         require(tx.origin == _msgSender(), "no contracts permitted");
@@ -228,12 +234,13 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
             "ERC20 method used for Aliveland auction"
         );
 
-        _placeBid(_nftAddress, _tokenId, _bidAmount);
+        _placeBid(_nftAddress, _tokenId, _owner, _bidAmount);
     }
 
     function _placeBid(
         address _nftAddress,
         uint256 _tokenId,
+        address _owner,
         uint256 _bidAmount
     ) internal whenNotPaused {
         Auction storage auction = auctions[_nftAddress][_tokenId];
@@ -271,7 +278,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         highestBid.bid = _bidAmount;
         highestBid.lastBidTime = _getNow();
 
-        emit BidPlaced(_nftAddress, _tokenId, _msgSender(), _bidAmount);
+        emit BidPlaced(_nftAddress, _tokenId, _msgSender(), _owner, _bidAmount);
     }
 
     function withdrawBid(address _nftAddress, uint256 _tokenId)
@@ -578,7 +585,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
     function _createAuction(
         address _nftAddress,
         uint256 _tokenId,
-        string memory _nftType,
+        string memory _mediaType,
         address _payToken,
         uint256 _reservePrice,
         uint256 _startTimestamp,
@@ -612,7 +619,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
             resulted: false
         });
 
-        emit AuctionCreated(_nftAddress, _tokenId, _nftType,  _payToken);
+        emit AuctionCreated(_nftAddress, _tokenId, _mediaType,  _startTimestamp, _endTimestamp, _reservePrice, _msgSender(), bidWithdrawalLockTime);
     }
 
     function _cancelAuction(address _nftAddress, uint256 _tokenId) private {

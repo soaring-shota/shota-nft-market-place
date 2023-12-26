@@ -14,6 +14,7 @@ async function main() {
     "Aliveland NFT",
     "ALNFT",
     BASE_URI,
+    "ipfs://metadata",
     mintFee,
     FEE_RECIPIENT,
     DEPLOYER_ADDRESS
