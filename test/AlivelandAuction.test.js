@@ -33,6 +33,7 @@ describe("Aliveland Auction Contract", () => {
                 "Aliveland NFT",
                 "ALNFT",
                 "ipfs",
+                "ipfs://metadata",
                 pricePerItem,
                 feeRecipient.address,
                 owner.address
@@ -122,7 +123,7 @@ describe("Aliveland Auction Contract", () => {
             await AlivelandNFT.setApprovalForAll(AlivelandAuction.target, true);
             await AlivelandAuction.setNowOverride('10');
             await expect(
-                AlivelandAuction.createAuction(
+                AlivelandAuction.connect(owner).createAuction(
                     AlivelandNFT.target,
                     firstTokenId,
                     'art',
@@ -136,7 +137,11 @@ describe("Aliveland Auction Contract", () => {
                 AlivelandNFT.target,
                 firstTokenId,
                 'art',
-                mockToken.target
+                '12',
+                '350',
+                reservePrice,
+                owner.address,
+                '1200'
             );
         });
     });
@@ -155,6 +160,7 @@ describe("Aliveland Auction Contract", () => {
                 "Aliveland NFT",
                 "ALNFT",
                 "ipfs",
+                "ipfs://metadata",
                 pricePerItem,
                 feeRecipient.address,
                 owner.address
@@ -201,7 +207,7 @@ describe("Aliveland Auction Contract", () => {
             const { AlivelandAuction, AlivelandNFT, owner } = await loadFixture(auctionFixture);
             const biddingContract = await BiddingContractMock.new(AlivelandAuction.target);
             await expectRevert(
-               biddingContract.bid(AlivelandNFT.target, firstTokenId, bidAmount),
+               biddingContract.bid(AlivelandNFT.target, firstTokenId, owner.address, bidAmount),
                "no contracts permitted"
             );
         });
@@ -212,6 +218,7 @@ describe("Aliveland Auction Contract", () => {
                 AlivelandAuction.placeBid(
                     AlivelandNFT.target,
                     firstTokenId,
+                    owner.address,
                     bidAmount
                 ),
                 "bidding outside of the auction duration"
@@ -225,6 +232,7 @@ describe("Aliveland Auction Contract", () => {
                 AlivelandAuction.placeBid(
                     AlivelandNFT.target,
                     firstTokenId,
+                    owner.address,
                     bidLowAmount
                 ),
                 "bid cannot be lower than reserve price"
@@ -239,12 +247,14 @@ describe("Aliveland Auction Contract", () => {
                 AlivelandAuction.connect(bidder).placeBid(
                     AlivelandNFT.target,
                     firstTokenId,
+                    owner.address,
                     pricePerItem
                 )
             ).to.emit(AlivelandAuction, "BidPlaced").withArgs(
                 AlivelandNFT.target,
                 firstTokenId,
                 bidder.address,
+                owner.address,
                 pricePerItem
             );
         });
@@ -274,6 +284,7 @@ describe("Aliveland Auction Contract", () => {
                 "Aliveland NFT",
                 "ALNFT",
                 "ipfs",
+                "ipfs://metadata",
                 pricePerItem,
                 feeRecipient.address,
                 owner.address
@@ -307,6 +318,7 @@ describe("Aliveland Auction Contract", () => {
         await AlivelandAuction.connect(bidder).placeBid(
             AlivelandNFT.target,
             firstTokenId,
+            owner.address,
             pricePerItem
         );
 
@@ -409,6 +421,7 @@ describe("Aliveland Auction Contract", () => {
                 await AlivelandAuction.connect(bidder).placeBid(
                     AlivelandNFT.target,
                     firstTokenId,
+                    owner.address,
                     pricePerItem
                 );
                 await AlivelandAuction.updateAuctionReservePrice(
@@ -455,6 +468,7 @@ describe("Aliveland Auction Contract", () => {
                 await AlivelandAuction.connect(bidder).placeBid(
                     AlivelandNFT.target,
                     firstTokenId,
+                    owner.address,
                     bidAmount
                 );
 

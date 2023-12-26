@@ -85,7 +85,7 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
     event ItemListed(
         address indexed owner,
         address indexed nft,
-        string  nftType,
+        string  mediaType,
         uint256 tokenId,
         uint256 quantity,
         address payToken,
@@ -116,6 +116,7 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
     event OfferCreated(
         address indexed creator,
         address indexed nft,
+        address indexed owner,
         uint256 tokenId,
         uint256 quantity,
         address payToken,
@@ -201,7 +202,7 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
 
     function listItem(
         address _nftAddress,
-        string memory _nftType,
+        string memory _mediaType,
         uint256 _tokenId,
         uint256 _quantity,
         address _payToken,
@@ -242,7 +243,7 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
         emit ItemListed(
             _msgSender(),
             _nftAddress,
-            _nftType,
+            _mediaType,
             _tokenId,
             _quantity,
             _payToken,
@@ -354,6 +355,7 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
 
     function createOffer(
         address _nftAddress,
+        address _owner,
         uint256 _tokenId,
         IERC20 _payToken,
         uint256 _quantity,
@@ -392,6 +394,7 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
         emit OfferCreated(
             _msgSender(),
             _nftAddress,
+            _owner,
             _tokenId,
             _quantity,
             address(_payToken),

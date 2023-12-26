@@ -5,12 +5,13 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Pausable.sol";
+import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Supply.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155Burnable, ERC1155Pausable {
+contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155Burnable, ERC1155Pausable, ERC1155Supply {
     using Counters for Counters.Counter;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -20,9 +21,11 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
 
     uint256 public mintFee;
     string public baseTokenURI;
+    string public metadataUrl;
     address payable public feeRecipient;
     string public name;
     string public symbol;
+
     mapping (uint256 => string) private cid;
 
     event Minted(
@@ -41,12 +44,14 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
         string memory _name,
         string memory _symbol,
         string memory _uri,
+        string memory _metadataUrl,
         uint256 _mintFee,
         address payable _feeRecipient,
         address _deployer
     ) ERC1155(_uri) {
         name = _name;
         symbol = _symbol;
+        metadataUrl = _metadataUrl;
         mintFee = _mintFee;
         baseTokenURI = _uri;
         feeRecipient = _feeRecipient;
@@ -56,6 +61,10 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
         _setupRole(DEFAULT_ADMIN_ROLE, _deployer);
         _setupRole(MINTER_ROLE, _deployer);
         _setupRole(PAUSER_ROLE, _deployer);
+    }
+
+    function updateMetadataUrl(string memory _url) external onlyOwner {
+        metadataUrl = _url;
     }
 
     function uri(uint256 _tokenId) override public view returns (string memory) {
@@ -130,7 +139,7 @@ contract AlivelandERC1155 is Context, Ownable, AccessControlEnumerable, ERC1155B
         uint256[] memory _ids,
         uint256[] memory _amounts,
         bytes memory _data
-    ) internal virtual override(ERC1155, ERC1155Pausable) {
+    ) internal virtual override(ERC1155, ERC1155Pausable, ERC1155Supply) {
         super._beforeTokenTransfer(_operator, _from, _to, _ids, _amounts, _data);
     }
 }

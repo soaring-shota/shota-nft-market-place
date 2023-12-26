@@ -16,6 +16,7 @@ describe("Aliveland ERC-1155 NFT Contract", async () => {
         "Aliveland NFT",
         "ALNFT",
         "ipfs",
+        "ipfs://metadata",
         mintFee,
         feeRecipient.address,
         owner

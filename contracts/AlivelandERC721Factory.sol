@@ -16,7 +16,6 @@ contract AlivelandERC721Factory is Ownable {
     mapping(address => bool) public exists;
     mapping(address => uint256) public indexes;
     mapping(address => mapping(uint256 => address)) public contracts;
-    mapping (address => string) public ipfsUrl;
     
     event ContractCreated(address creator, address nft);
     event ContractDisabled(address caller, address nft);
@@ -48,14 +47,6 @@ contract AlivelandERC721Factory is Ownable {
         feeRecipient = _feeRecipient;
     }
 
-    function updateCollectionIpfsUrl(address _collection, string memory _ipfsUrl) external onlyOwner {
-        ipfsUrl[_collection] = _ipfsUrl;
-    }
-
-    function getCollectionIpfsUrl(address _collection) external onlyOwner view returns (string memory) {
-        return ipfsUrl[_collection];
-    }
-
     function createNFTContract(string memory _name, string memory _symbol, string memory _ipfsUrl)
         external
         payable
@@ -69,20 +60,20 @@ contract AlivelandERC721Factory is Ownable {
             _name,
             _symbol,
             baseURI,
+            _ipfsUrl,
             mintFee,
             feeRecipient,
             msg.sender
         );
         exists[address(nft)] = true;
         contracts[msg.sender][indexes[msg.sender]] = address(nft);
-        ipfsUrl[address(nft)] = _ipfsUrl;
         indexes[msg.sender]++;
 
         emit ContractCreated(_msgSender(), address(nft));
         return address(nft);
     }
 
-    function registerERC721Contract(address _tokenContractAddress, string memory _ipfsUrl)
+    function registerERC721Contract(address _tokenContractAddress)
         external
         onlyOwner
     {
@@ -90,7 +81,6 @@ contract AlivelandERC721Factory is Ownable {
         require(IERC165(_tokenContractAddress).supportsInterface(INTERFACE_ID_ERC721), "Not an ERC721 contract");
         exists[_tokenContractAddress] = true;
         contracts[msg.sender][indexes[msg.sender]] = _tokenContractAddress;
-        ipfsUrl[_tokenContractAddress] = _ipfsUrl;
         indexes[msg.sender]++;
         emit ContractCreated(_msgSender(), _tokenContractAddress);
     }
