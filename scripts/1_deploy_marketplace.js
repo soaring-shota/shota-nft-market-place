@@ -1,4 +1,8 @@
-const { FEE_RECIPIENT, PLATFORM_FEE } = require('./constants');
+require('dotenv').config();
+const { 
+  FEE_RECIPIENT, 
+  PLATFORM_FEE, 
+} = process.env;
 
 async function main() {
   const AlivelandMarketplace = await ethers.getContractFactory('AlivelandMarketplace');

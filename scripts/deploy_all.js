@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { 
   FEE_RECIPIENT,
   DEPLOYER_ADDRESS, 
@@ -5,7 +6,7 @@ const {
   MINT_FEE, 
   PLATFORM_FEE, 
   COLLECTION_FEE 
-} = require('./constants');
+} = process.env;
 const { ethers } = require('hardhat');
 
 async function main() {

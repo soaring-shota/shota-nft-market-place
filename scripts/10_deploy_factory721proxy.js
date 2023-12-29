@@ -1,7 +1,8 @@
+require('dotenv').config();
 const { 
   FACTORY721_ADDRESS,
   PROXY_ADMIN,
-} = require('./constants');
+} = process.env;
 const { ethers } = require("hardhat");
 
 async function main() {
