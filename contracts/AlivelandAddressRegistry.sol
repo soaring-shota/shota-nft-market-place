@@ -1,14 +1,9 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/interfaces/IERC165.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract AlivelandAddressRegistry is Ownable {
-    bytes4 private constant INTERFACE_ID_ERC721 = 0x80ac58cd;
-    bytes4 private constant INTERFACE_ID_ERC1155 = 0xd9b67a26;
-
     address public auction;
     address public marketplace;
     address public erc721Factory;

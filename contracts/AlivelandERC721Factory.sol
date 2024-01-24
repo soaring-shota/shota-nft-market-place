@@ -17,7 +17,7 @@ contract AlivelandERC721Factory is Ownable {
     mapping(address => uint256) public indexes;
     mapping(address => mapping(uint256 => address)) public contracts;
     
-    event ContractCreated(address creator, address nft);
+    event ContractCreated(address creator, address nft, string name);
     event ContractDisabled(address caller, address nft);
 
     constructor(
@@ -30,6 +30,10 @@ contract AlivelandERC721Factory is Ownable {
         mintFee = _mintFee;
         platformFee = _platformFee;
         feeRecipient = _feeRecipient;
+    }
+
+    function updateBaseURI(string memory _baseURI) external onlyOwner {
+        baseURI = _baseURI;
     }
 
     function updateMintFee(uint256 _mintFee) external onlyOwner {
@@ -69,7 +73,7 @@ contract AlivelandERC721Factory is Ownable {
         contracts[msg.sender][indexes[msg.sender]] = address(nft);
         indexes[msg.sender]++;
 
-        emit ContractCreated(_msgSender(), address(nft));
+        emit ContractCreated(_msgSender(), address(nft), _name);
         return address(nft);
     }
 
@@ -82,7 +86,7 @@ contract AlivelandERC721Factory is Ownable {
         exists[_tokenContractAddress] = true;
         contracts[msg.sender][indexes[msg.sender]] = _tokenContractAddress;
         indexes[msg.sender]++;
-        emit ContractCreated(_msgSender(), _tokenContractAddress);
+        emit ContractCreated(_msgSender(), _tokenContractAddress, ERC721(_tokenContractAddress).name());
     }
 
     function disableTokenContract(address _tokenContractAddress)

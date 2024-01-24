@@ -4,9 +4,9 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Burnable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Pausable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
@@ -18,8 +18,8 @@ contract AlivelandERC721 is
     AccessControlEnumerable,
     ERC721Enumerable,
     ERC721URIStorage,
-    ERC721Burnable,
     ERC721Pausable,
+    ERC721Royalty,
     Ownable
 {
     using Counters for Counters.Counter;
@@ -34,17 +34,13 @@ contract AlivelandERC721 is
     string public metadataUrl;
     uint256 public mintFee;
     address payable public feeRecipient;
-    mapping (uint256 => string) private cid;
-    
-    mapping(uint256 => address) private owners;
-    mapping(address => uint256) private balances;
-    mapping(uint256 => address) private tokenApprovals;
 
     event Minted(
         uint256 tokenId,
         address beneficiary,
         string  tokenUri,
-        address minter
+        address minter,
+        string name
     );
 
     event UpdateMintFee(
@@ -91,41 +87,31 @@ contract AlivelandERC721 is
     }
     
     function tokenURI(uint256 _tokenId) public view virtual override (ERC721, ERC721URIStorage) returns (string memory) {
-        _requireMinted(_tokenId);
-
-        string memory base = _baseURI();
-        
-        if (bytes(base).length > 0) {
-            return string(abi.encodePacked(base, cid[_tokenId]));
-        }
-
         return super.tokenURI(_tokenId);
     }
 
-    function mint(address _to, string calldata _cid) public payable virtual returns (uint256) {
+    function mint(address _to, string calldata _cid, uint96 _royalty, string memory _name) public payable virtual returns (uint256) {
         require(hasRole(MINTER_ROLE, _msgSender()), "AlivelandERC721: must have minter role to mint");
         require(msg.value >= mintFee, "AlivelandERC721: insufficient funds to mint");
 
         uint256 newTokenId = tokenIdTracker.current();
-        _mint(_to, newTokenId);
+        tokenIdTracker.increment();
         
-        cid[newTokenId] = _cid;
-        string memory newTokenURI = tokenURI(newTokenId);
-        _setTokenURI(newTokenId, newTokenURI);
-
         (bool success,) = feeRecipient.call{value : msg.value}("");
         require(success, "AlivelandERC721: transfer failed");
 
-        tokenIdTracker.increment();
+        _mint(_to, newTokenId);
+        _setTokenURI(newTokenId, _cid);
+        _setTokenRoyalty(newTokenId, _msgSender(), _royalty);
 
-        emit Minted(newTokenId, _to, newTokenURI, _msgSender());
+        emit Minted(newTokenId, _to, tokenURI(newTokenId), _msgSender(), _name);
 
         return newTokenId;
     }
 
-    function burn(uint256 _tokenId) public virtual override {
-        require(_isApprovedOrOwner(_msgSender(), _tokenId), "AlivelandERC721: caller is not token owner or approved");
-        ERC721._burn(_tokenId);
+    function burn(uint256 tokenId) public {
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: caller is not token owner or approved");
+        _burn(tokenId);
     }
 
     function pause() public virtual {
@@ -140,27 +126,13 @@ contract AlivelandERC721 is
 
     function supportsInterface(
         bytes4 _interfaceId
-    ) public view virtual override(AccessControlEnumerable, ERC721, ERC721Enumerable, ERC721URIStorage) returns (bool) {
+    ) public view virtual override(AccessControlEnumerable, ERC721, ERC721Enumerable, ERC721URIStorage, ERC721Royalty) returns (bool) {
         return super.supportsInterface(_interfaceId);
     }
 
-    function _burn(uint256 _tokenId) internal virtual override(ERC721, ERC721URIStorage) {
-        address owner = ERC721.ownerOf(_tokenId);
-
-        _beforeTokenTransfer(owner, address(0), _tokenId, 1);
-
-        owner = ERC721.ownerOf(_tokenId);
-
-        delete tokenApprovals[_tokenId];
-
-        unchecked {
-            balances[owner] -= 1;
-        }
-        delete owners[_tokenId];
-
-        emit Transfer(owner, address(0), _tokenId);
-
-        _afterTokenTransfer(owner, address(0), _tokenId, 1);
+    function _burn(uint256 _tokenId) internal virtual override(ERC721, ERC721URIStorage, ERC721Royalty) {
+        ERC721URIStorage._burn(_tokenId);
+        _resetTokenRoyalty(_tokenId);
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
