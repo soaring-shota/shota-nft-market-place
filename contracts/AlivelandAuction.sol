@@ -229,7 +229,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         require(_bidAmount >= minBidRequired, "failed to outbid highest bidder");
 
         if (auction.payToken != address(0)) {
-            _safeTransferFrom(auction.payToken, minBidRequired, _msgSender(), address(this));
+            _safeTransferFrom(auction.payToken, _bidAmount, _msgSender(), address(this));
         }
 
         if (highestBid.bidder != address(0)) {

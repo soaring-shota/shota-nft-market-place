@@ -10,6 +10,8 @@ describe("Aliveland Marketplace Contract", () => {
     const pricePerItem = ethers.parseEther("1");
     const newPrice = ethers.parseEther("0.5");
     const TOKENS = '1000000000000000000000';
+    const payToken = '0x0000000000000000000000000000000000001010';
+    const royalty = 250;
 
     async function deployTokenFixture() {
         const [owner, feeRecipient, minter, auction, marketplace] = await ethers.getSigners();
@@ -31,8 +33,8 @@ describe("Aliveland Marketplace Contract", () => {
                 owner.address
             ]
         );
-        await AlivelandNFT.mint(owner.address, "test1", { from: owner.address, value: pricePerItem });
-        await AlivelandNFT.mint(owner.address, "test2", { from: owner.address, value: pricePerItem });
+        await AlivelandNFT.mint(owner.address, "test1", royalty, "nft1", { from: owner.address, value: pricePerItem });
+        await AlivelandNFT.mint(owner.address, "test2", royalty, "nft2", { from: owner.address, value: pricePerItem });
 
         const mockToken = await ethers.deployContract(
             "MockERC20",
@@ -130,8 +132,8 @@ describe("Aliveland Marketplace Contract", () => {
                 owner.address
             ]
         );
-        await AlivelandNFT.mint(owner.address, "test1", { from: owner.address, value: pricePerItem });
-        await AlivelandNFT.mint(owner.address, "test2", { from: owner.address, value: pricePerItem });
+       await AlivelandNFT.mint(owner.address, "test1", royalty, "nft1", { from: owner.address, value: pricePerItem });
+        await AlivelandNFT.mint(owner.address, "test2", royalty, "nft2", { from: owner.address, value: pricePerItem });
 
         const mockToken = await ethers.deployContract(
             "MockERC20",
@@ -144,7 +146,7 @@ describe("Aliveland Marketplace Contract", () => {
         );
 
         const AlivelandTokenRegistry = await ethers.deployContract("AlivelandTokenRegistry");
-        await AlivelandTokenRegistry.add(mockToken.target);
+        await AlivelandTokenRegistry.add(payToken);
         const AlivelandAddressRegistry = await ethers.deployContract("AlivelandAddressRegistry");
         await AlivelandAddressRegistry.updateTokenRegistry(AlivelandTokenRegistry.target);
         await AlivelandAddressRegistry.updateMarketplace(AlivelandMarketplace.target);
@@ -156,7 +158,7 @@ describe("Aliveland Marketplace Contract", () => {
             'art',
             firstTokenId,
             '1',
-            mockToken.target,
+            payToken,
             pricePerItem,
             '0'
         );
@@ -205,7 +207,7 @@ describe("Aliveland Marketplace Contract", () => {
                 AlivelandMarketplace.connect(owner).updateListing(
                     AlivelandNFT.target,
                     secondTokenId,
-                    mockToken.target,
+                    payToken,
                     newPrice
                 )
             ).to.be.reverted;
@@ -216,7 +218,7 @@ describe("Aliveland Marketplace Contract", () => {
             await AlivelandMarketplace.connect(owner).updateListing(
                 AlivelandNFT.target,
                 firstTokenId,
-                mockToken.target,
+                payToken,
                 newPrice
             );
         });
@@ -227,14 +229,14 @@ describe("Aliveland Marketplace Contract", () => {
                 AlivelandMarketplace.connect(owner).updateListing(
                     AlivelandNFT.target,
                     firstTokenId,
-                    mockToken.target,
+                    payToken,
                     newPrice
                 )
             ).to.emit(AlivelandMarketplace, "ItemUpdated").withArgs(
                 owner.address,
                 AlivelandNFT.target,
                 firstTokenId,
-                mockToken.target,
+                payToken,
                 newPrice
             );
         });
@@ -248,7 +250,7 @@ describe("Aliveland Marketplace Contract", () => {
                 AlivelandMarketplace.connect(buyer).buyItem(
                     AlivelandNFT.target,
                     firstTokenId,
-                    mockToken.target,
+                    payToken,
                     owner,
                     { value: pricePerItem }
                 )
@@ -263,7 +265,7 @@ describe("Aliveland Marketplace Contract", () => {
                 'art',
                 secondTokenId,
                 '1',
-                mockToken.target,
+                payToken,
                 pricePerItem,
                 '1000000000000000'
             );
@@ -271,7 +273,7 @@ describe("Aliveland Marketplace Contract", () => {
                 AlivelandMarketplace.connect(buyer).buyItem(
                     AlivelandNFT.target,
                     secondTokenId,
-                    mockToken.target,
+                    payToken,
                     owner,
                     { value: pricePerItem }
                 )
@@ -284,7 +286,7 @@ describe("Aliveland Marketplace Contract", () => {
                 AlivelandMarketplace.connect(buyer).buyItem(
                     AlivelandNFT.target,
                     firstTokenId,
-                    mockToken.target,
+                    payToken,
                     owner
                 )
             ).to.be.reverted;
@@ -295,7 +297,7 @@ describe("Aliveland Marketplace Contract", () => {
             await AlivelandMarketplace.connect(buyer).buyItem(
                 AlivelandNFT.target,
                 firstTokenId,
-                mockToken.target,
+                payToken,
                 owner,
                 { value: pricePerItem }
             );
@@ -310,7 +312,7 @@ describe("Aliveland Marketplace Contract", () => {
                 AlivelandMarketplace.connect(buyer).buyItem(
                     AlivelandNFT.target,
                     firstTokenId,
-                    mockToken.target,
+                    payToken,
                     owner,
                     { value: pricePerItem }
                 )
@@ -320,7 +322,7 @@ describe("Aliveland Marketplace Contract", () => {
                 AlivelandNFT.target,
                 firstTokenId,
                 '1',
-                mockToken.target,
+                payToken,
                 pricePerItem
             );
         });
