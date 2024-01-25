@@ -5,6 +5,11 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./AlivelandERC1155.sol";
 
+interface IERC1155Tradable {
+    function name() external returns (string memory _name);
+    function symbol() external returns (string memory _symbol);
+}
+
 contract AlivelandERC1155Factory is Ownable {
     string public baseURI;
     uint256 public mintFee;
@@ -17,7 +22,7 @@ contract AlivelandERC1155Factory is Ownable {
     mapping(address => uint256) public indexes;
     mapping(address => mapping(uint256 => address)) public contracts;
     
-    event ContractCreated(address creator, address nft);
+    event ContractCreated(address creator, address nft, string name);
     event ContractDisabled(address caller, address nft);
 
     constructor(
@@ -30,6 +35,10 @@ contract AlivelandERC1155Factory is Ownable {
         mintFee = _mintFee;
         platformFee = _platformFee;
         feeRecipient = _feeRecipient;
+    }
+
+    function updateBaseURI(string memory _baseURI) external onlyOwner {
+        baseURI = _baseURI;
     }
 
     function updateMintFee(uint256 _mintFee) external onlyOwner {
@@ -69,7 +78,7 @@ contract AlivelandERC1155Factory is Ownable {
         contracts[msg.sender][indexes[msg.sender]] = address(nft);
         indexes[msg.sender]++;
 
-        emit ContractCreated(_msgSender(), address(nft));
+        emit ContractCreated(_msgSender(), address(nft), _name);
         return address(nft);
     }
 
@@ -82,7 +91,7 @@ contract AlivelandERC1155Factory is Ownable {
         exists[_tokenContractAddress] = true;
         contracts[msg.sender][indexes[msg.sender]] = _tokenContractAddress;
         indexes[msg.sender]++;
-        emit ContractCreated(_msgSender(), _tokenContractAddress);
+        emit ContractCreated(_msgSender(), _tokenContractAddress, IERC1155Tradable(_tokenContractAddress).name());
     }
 
     function disableTokenContract(address _tokenContractAddress)

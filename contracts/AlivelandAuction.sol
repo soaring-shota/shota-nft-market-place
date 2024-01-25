@@ -9,34 +9,12 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "./AlivelandERC721.sol";
 
 interface IAlivelandAddressRegistry {
     function auction() external view returns (address);
 
-    function marketplace() external view returns (address);
-
-    function erc721Factory() external view returns (address);
-
-    function erc1155Factory() external view returns (address);
-
     function tokenRegistry() external view returns (address);
-}
-
-interface IAlivelandMarketplace {
-    function minters(address, uint256) external view returns (address);
-
-    function royalties(address, uint256) external view returns (uint16);
-
-    function collectionRoyalties(address)
-        external
-        view
-        returns (
-            uint16,
-            address,
-            address
-        );
-
-    function getPrice(address) external view returns (uint256);
 }
 
 interface IAlivelandTokenRegistry {
@@ -84,6 +62,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         string  mediaType,
         uint256 startTime,
         uint256 endTime,
+        address payToken,
         uint256 reservePrice,
         address indexed owner,
         uint256 lockTime
@@ -154,14 +133,6 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         _;
     }
 
-    modifier onlyMarketplace() {
-        require(
-            addressRegistry.marketplace() == _msgSender(),
-            "not marketplace contract"
-        );
-        _;
-    }
-    
     function initialize(address payable _platformFeeRecipient)
         public
         initializer
@@ -220,7 +191,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         uint256 _tokenId,
         address _owner,
         uint256 _bidAmount
-    ) external nonReentrant whenNotPaused {
+    ) external payable nonReentrant whenNotPaused {
         require(tx.origin == _msgSender(), "no contracts permitted");
 
         Auction memory auction = auctions[_nftAddress][_tokenId];
@@ -258,11 +229,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         require(_bidAmount >= minBidRequired, "failed to outbid highest bidder");
 
         if (auction.payToken != address(0)) {
-            IERC20 payToken = IERC20(auction.payToken);
-            require(
-                payToken.transferFrom(_msgSender(), address(this), _bidAmount),
-                "insufficient balance or not approved"
-            );
+            _safeTransferFrom(auction.payToken, _bidAmount, _msgSender(), address(this));
         }
 
         if (highestBid.bidder != address(0)) {
@@ -302,9 +269,9 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
 
         uint256 previousBid = highestBid.bid;
 
-        delete highestBids[_nftAddress][_tokenId];
-
         _refundHighestBidder(_nftAddress, _tokenId, payable(_msgSender()), previousBid);
+
+        delete highestBids[_nftAddress][_tokenId];
 
         emit BidWithdrawn(_nftAddress, _tokenId, _msgSender(), previousBid);
     }
@@ -313,7 +280,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         external
         nonReentrant
     {
-        Auction storage auction = auctions[_nftAddress][_tokenId];
+        Auction memory auction = auctions[_nftAddress][_tokenId];
 
         require(
             IERC721(_nftAddress).ownerOf(_tokenId) == _msgSender() &&
@@ -325,7 +292,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         require(_getNow() > auction.endTime, "auction not ended");
         require(!auction.resulted, "auction already resulted");
 
-        HighestBid storage highestBid = highestBids[_nftAddress][_tokenId];
+        HighestBid memory highestBid = highestBids[_nftAddress][_tokenId];
         address winner = highestBid.bidder;
         uint256 winningBid = highestBid.bid;
 
@@ -340,64 +307,27 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
             "auction not approved"
         );
 
-        auction.resulted = true;
+        uint256 payAmount = winningBid;
 
-        delete highestBids[_nftAddress][_tokenId];
-
-        uint256 payAmount;
-
-        if (winningBid > auction.reservePrice) {
-            uint256 aboveReservePrice = winningBid.sub(auction.reservePrice);
+        if (payAmount > auction.reservePrice && platformFeeRecipient != address(0)) {
+            uint256 aboveReservePrice = payAmount.sub(auction.reservePrice);
 
             uint256 platformFeeAboveReserve = aboveReservePrice
                 .mul(platformFee)
                 .div(1000);
 
-            IERC20 payToken = IERC20(auction.payToken);
-            require(
-                payToken.transfer(
-                    platformFeeRecipient,
-                    platformFeeAboveReserve
-                ),
-                "failed to send platform fee"
-            );
+            _safeTransfer(auction.payToken, platformFeeAboveReserve, platformFeeRecipient);
 
-            payAmount = winningBid.sub(platformFeeAboveReserve);
-        } else {
-            payAmount = winningBid;
+            payAmount = payAmount.sub(platformFeeAboveReserve);
         }
 
-        IAlivelandMarketplace marketplace = IAlivelandMarketplace(
-            addressRegistry.marketplace()
-        );
-        address minter = marketplace.minters(_nftAddress, _tokenId);
-        uint16 royalty = marketplace.royalties(_nftAddress, _tokenId);
-        if (minter != address(0) && royalty != 0) {
-            uint256 royaltyFee = payAmount.mul(royalty).div(10000);
-            IERC20 payToken = IERC20(auction.payToken);
-            require(
-                payToken.transfer(minter, royaltyFee),
-                "failed to send the owner their royalties"
-            );
+        (address minter, uint256 royaltyFee) = AlivelandERC721(_nftAddress).royaltyInfo(_tokenId, payAmount);
+        if (royaltyFee > 0) {
+            _safeTransfer(auction.payToken, royaltyFee, minter);
             payAmount = payAmount.sub(royaltyFee);
-        } else {
-            (royalty, , minter) = marketplace.collectionRoyalties(_nftAddress);
-            if (minter != address(0) && royalty != 0) {
-                uint256 royaltyFee = payAmount.mul(royalty).div(10000);
-                IERC20 payToken = IERC20(auction.payToken);
-                require(
-                    payToken.transfer(minter, royaltyFee),
-                    "failed to send the royalties"
-                );
-                payAmount = payAmount.sub(royaltyFee);
-            }
         }
         if (payAmount > 0) {
-            IERC20 payToken = IERC20(auction.payToken);
-            require(
-                payToken.transfer(auction.owner, payAmount),
-                "failed to send the owner the auction balance"
-            );
+            _safeTransfer(auction.payToken, payAmount, auction.owner);
         }
         
         IERC721(_nftAddress).safeTransferFrom(
@@ -416,6 +346,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         );
 
         delete auctions[_nftAddress][_tokenId];
+        delete highestBids[_nftAddress][_tokenId];
     }
 
     function cancelAuction(address _nftAddress, uint256 _tokenId)
@@ -619,7 +550,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
             resulted: false
         });
 
-        emit AuctionCreated(_nftAddress, _tokenId, _mediaType,  _startTimestamp, _endTimestamp, _reservePrice, _msgSender(), bidWithdrawalLockTime);
+        emit AuctionCreated(_nftAddress, _tokenId, _mediaType,  _startTimestamp, _endTimestamp, _payToken, _reservePrice, _msgSender(), bidWithdrawalLockTime);
     }
 
     function _cancelAuction(address _nftAddress, uint256 _tokenId) private {
@@ -648,11 +579,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
     ) private {
         Auction memory auction = auctions[_nftAddress][_tokenId];
 
-        IERC20 payToken = IERC20(auction.payToken);
-        require(
-            payToken.transfer(_currentHighestBidder, _currentHighestBid),
-            "failed to refund previous bidder"
-        );
+        _safeTransfer(auction.payToken, _currentHighestBid, _currentHighestBidder);
 
         emit BidRefunded(
             _nftAddress,
@@ -660,6 +587,30 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
             _currentHighestBidder,
             _currentHighestBid
         );
+    }
+
+    function _safeTransfer(address _payToken, uint256 _amount, address _to) internal {
+        if (_amount == 0 || _to == address(0)) return;
+        if (_payToken == address(0x1010)) {
+            (bool success, ) = payable(_to).call{ value: _amount }("");
+            require(success, "ether transfer failed");
+        } else {
+            IERC20 payToken = IERC20(_payToken);
+            payToken.safeTransfer(_to, _amount);
+        }
+    }
+
+    function _safeTransferFrom(address _payToken, uint256 _amount, address _from, address _to) internal {
+        if (_amount == 0 || _to == address(0)) return;
+        if (_payToken == address(0x1010)) {
+            if (_to != address(this)) {
+                (bool success, ) = payable(_to).call{ value: _amount }("");
+                require(success, "ether transfer failed");
+            }
+        } else {
+            IERC20 payToken = IERC20(_payToken);
+            payToken.safeTransferFrom(_from, _to, _amount);
+        }
     }
 
     function reclaimERC20(address _tokenContract) external onlyOwner {

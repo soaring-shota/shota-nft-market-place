@@ -12,6 +12,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "./AlivelandERC721.sol";
 
 interface IAlivelandAddressRegistry {
     function auction() external view returns (address);
@@ -56,15 +57,12 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
     uint16 public platformFee;
     address payable public feeReceipient;  
 
-    mapping(address => mapping(uint256 => address)) public minters;
-    mapping(address => mapping(uint256 => uint16)) public royalties;
     mapping(address => mapping(uint256 => mapping(address => Listing))) public listings;
-    mapping(address => CollectionRoyalty) public collectionRoyalties;
     mapping(address => mapping(uint256 => mapping(address => Offer))) public offers;
 
     struct Listing {
         uint256 quantity;
-        address payToken;
+        IERC20 payToken;
         uint256 pricePerItem;
         uint256 startingTime;
     }
@@ -74,12 +72,6 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
         uint256 quantity;
         uint256 pricePerItem;
         uint256 deadline;
-    }
-
-    struct CollectionRoyalty {
-        uint16 royalty;
-        address creator;
-        address feeRecipient;
     }
 
     event ItemListed(
@@ -236,7 +228,7 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
 
         listings[_nftAddress][_tokenId][_msgSender()] = Listing(
             _quantity,
-            _payToken,
+            IERC20(_payToken),
             _pricePerItem,
             _startingTime
         );
@@ -268,7 +260,7 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
 
         _validOwner(_nftAddress, _tokenId, _msgSender(), listedItem.quantity);
 
-        listedItem.payToken = _payToken;
+        listedItem.payToken = IERC20(_payToken);
         listedItem.pricePerItem = _newPrice;
         emit ItemUpdated(
             _msgSender(),
@@ -292,38 +284,22 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
         validListing(_nftAddress, _tokenId, _owner)
     {
         Listing memory listedItem = listings[_nftAddress][_tokenId][_owner];
-        require(listedItem.payToken == _payToken, "invalid pay token");
+        require(address(listedItem.payToken) == _payToken, "invalid pay token");
 
         uint256 price = listedItem.pricePerItem.mul(listedItem.quantity);
         uint256 feeAmount = price.mul(platformFee).div(1e3);
         require(msg.sender.balance >= msg.value, "insufficient balance");
-        require(msg.value == price, "please send the exact amount");
+        require(msg.value >= price, "please send the exact amount");
 
-        _safeTransfer(payable(feeReceipient), feeAmount);
+        _safeTransferFrom(_payToken, feeAmount, _msgSender(), feeReceipient);
 
-        address minter = minters[_nftAddress][_tokenId];
-        uint16 royalty = royalties[_nftAddress][_tokenId];
-        if (minter != address(0) && royalty != 0) {
-            uint256 royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
-
-            _safeTransfer(payable(minter), royaltyFee);
-
+        (address minter, uint256 royaltyFee) = AlivelandERC721(_nftAddress).royaltyInfo(_tokenId, price.sub(feeAmount));
+        if (royaltyFee > 0) {
+            _safeTransferFrom(_payToken, royaltyFee, _msgSender(), minter);
             feeAmount = feeAmount.add(royaltyFee);
-        } else {
-            minter = collectionRoyalties[_nftAddress].feeRecipient;
-            royalty = collectionRoyalties[_nftAddress].royalty;
-            if (minter != address(0) && royalty != 0) {
-                uint256 royaltyFee = price.sub(feeAmount).mul(royalty).div(
-                    10000
-                );
-
-                _safeTransfer(payable(minter), royaltyFee);
-
-                feeAmount = feeAmount.add(royaltyFee);
-            }
         }
 
-        _safeTransfer(payable(_owner), price.sub(feeAmount));
+        _safeTransferFrom(_payToken, price.sub(feeAmount), _msgSender(), _owner);
 
         if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
             IERC721(_nftAddress).safeTransferFrom(
@@ -361,24 +337,32 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
         uint256 _quantity,
         uint256 _pricePerItem,
         uint256 _deadline
-    ) external offerNotExists(_nftAddress, _tokenId, _msgSender()) {
+    ) external payable offerNotExists(_nftAddress, _tokenId, _msgSender()) {
         require(
             IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721) ||
                 IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC1155),
             "invalid nft address"
         );
+        if (address(_payToken) == address(0x1010)) {
+            require(
+                msg.value >= _pricePerItem.mul(_quantity),
+                "insufficient value"
+            );
+        }
 
         IAlivelandAuction auction = IAlivelandAuction(addressRegistry.auction());
 
-        (, , , uint256 startTime, , bool resulted) = auction.auctions(
-            _nftAddress,
-            _tokenId
-        );
+        if (address(auction) != address(0)) {
+            (, , , uint256 startTime, , bool resulted) = auction.auctions(
+                _nftAddress,
+                _tokenId
+            );
 
-        require(
-            startTime == 0 || resulted == true,
-            "cannot place an offer if auction is going on"
-        );
+            require(
+                startTime == 0 || resulted == true,
+                "cannot place an offer if auction is going on"
+            );
+        }
 
         require(_deadline > _getNow(), "invalid expiration");
 
@@ -403,10 +387,12 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
         );
     }
 
-    function cancelOffer(address _nftAddress, uint256 _tokenId)
-        external
-        offerExists(_nftAddress, _tokenId, _msgSender())
-    {
+    function cancelOffer(address _nftAddress, uint256 _tokenId) external {
+        Offer storage offer = offers[_nftAddress][_tokenId][_msgSender()];
+        require(offer.pricePerItem.mul(offer.quantity) > 0, "Offer does not exist");
+        if (address(offer.payToken) == address(0x1010)) {
+            _safeTransfer(address(offer.payToken), offer.pricePerItem.mul(offer.quantity), _msgSender());
+        }
         delete (offers[_nftAddress][_tokenId][_msgSender()]);
         emit OfferCanceled(_msgSender(), _nftAddress, _tokenId);
     }
@@ -422,32 +408,17 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
 
         uint256 price = offer.pricePerItem.mul(offer.quantity);
         uint256 feeAmount = price.mul(platformFee).div(1e3);
-        uint256 royaltyFee;
 
-        offer.payToken.safeTransferFrom(_creator, feeReceipient, feeAmount);
+        _safeTransferFrom(address(offer.payToken), feeAmount, _creator, feeReceipient);
 
-        address minter = minters[_nftAddress][_tokenId];
-        uint16 royalty = royalties[_nftAddress][_tokenId];
+        (address minter, uint256 royaltyFee) = AlivelandERC721(_nftAddress).royaltyInfo(_tokenId, price.sub(feeAmount));
 
-        if (minter != address(0) && royalty != 0) {
-            royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
-            offer.payToken.safeTransferFrom(_creator, minter, royaltyFee);
+        if (royaltyFee > 0) {
+            _safeTransferFrom(address(offer.payToken), royaltyFee, _creator, minter);
             feeAmount = feeAmount.add(royaltyFee);
-        } else {
-            minter = collectionRoyalties[_nftAddress].feeRecipient;
-            royalty = collectionRoyalties[_nftAddress].royalty;
-            if (minter != address(0) && royalty != 0) {
-                royaltyFee = price.sub(feeAmount).mul(royalty).div(10000);
-                offer.payToken.safeTransferFrom(_creator, minter, royaltyFee);
-                feeAmount = feeAmount.add(royaltyFee);
-            }
         }
 
-        offer.payToken.safeTransferFrom(
-            _creator,
-            _msgSender(),
-            price.sub(feeAmount)
-        );
+        _safeTransferFrom(address(offer.payToken), price.sub(feeAmount), _creator, _msgSender());
 
         if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
             IERC721(_nftAddress).safeTransferFrom(
@@ -479,55 +450,6 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
 
         delete (listings[_nftAddress][_tokenId][_msgSender()]);
         delete (offers[_nftAddress][_tokenId][_creator]);
-    }
-
-    function registerRoyalty(
-        address _nftAddress,
-        uint256 _tokenId,
-        uint16 _royalty
-    ) external {
-        require(_royalty <= 10000, "invalid royalty");
-        require(_isAlivelandNFT(_nftAddress), "invalid nft address");
-
-        _validOwner(_nftAddress, _tokenId, _msgSender(), 1);
-
-        require(
-            minters[_nftAddress][_tokenId] == address(0),
-            "royalty already set"
-        );
-        minters[_nftAddress][_tokenId] = _msgSender();
-        royalties[_nftAddress][_tokenId] = _royalty;
-    }
-
-    function registerCollectionRoyalty(
-        address _nftAddress,
-        address _creator,
-        uint16 _royalty,
-        address _feeRecipient
-    ) external onlyOwner {
-        require(_creator != address(0), "invalid creator address");
-        require(_royalty <= 10000, "invalid royalty");
-        require(
-            _royalty == 0 || _feeRecipient != address(0),
-            "invalid fee recipient address"
-        );
-        require(!_isAlivelandNFT(_nftAddress), "invalid nft address");
-
-        if (collectionRoyalties[_nftAddress].creator == address(0)) {
-            collectionRoyalties[_nftAddress] = CollectionRoyalty(
-                _royalty,
-                _creator,
-                _feeRecipient
-            );
-        } else {
-            CollectionRoyalty storage collectionRoyalty = collectionRoyalties[
-                _nftAddress
-            ];
-
-            collectionRoyalty.royalty = _royalty;
-            collectionRoyalty.feeRecipient = _feeRecipient;
-            collectionRoyalty.creator = _creator;
-        }
     }
 
     function getPrice(address _tokenAddr) public view returns (uint256) {     
@@ -595,9 +517,26 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
         }
     }
 
-    function _safeTransfer(address payable to, uint256 _value) internal {
-        (bool success, ) = payable(to).call{ value: _value }("");
-        require(success, "ether transfer failed");
+    function _safeTransfer(address _payToken, uint256 _amount, address _to) internal {
+        if (_amount == 0 || _to == address(0)) return;
+        if (_payToken == address(0x1010)) {
+            (bool success, ) = payable(_to).call{ value: _amount }("");
+            require(success, "ether transfer failed");
+        } else {
+            IERC20 payToken = IERC20(_payToken);
+            payToken.safeTransfer(_to, _amount);
+        }
+    }
+
+    function _safeTransferFrom(address _payToken, uint256 _amount, address _from, address _to) internal {
+        if (_amount == 0 || _to == address(0)) return;
+        if (_payToken == address(0x1010)) {
+            (bool success, ) = payable(_to).call{ value: _amount }("");
+            require(success, "ether transfer failed");
+        } else {
+            IERC20 payToken = IERC20(_payToken);
+            payToken.safeTransferFrom(_from, _to, _amount);
+        }
     }
 
     function _cancelListing(
