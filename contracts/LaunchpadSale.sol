@@ -34,4 +34,6 @@ contract LaunchpadSale {
     function endTime() external view returns (uint256) {
         return collection.saleEndTime();
     }
+
+    receive() external payable {}
 }
