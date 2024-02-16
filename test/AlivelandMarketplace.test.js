@@ -1,6 +1,4 @@
 const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
 const { parseEther } = require("ethers");
 
 describe("Aliveland Marketplace Contract", () => {

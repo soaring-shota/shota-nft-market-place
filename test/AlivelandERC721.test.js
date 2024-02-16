@@ -1,6 +1,4 @@
 const { loadFixture } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
 
 describe("Aliveland ERC-721 NFT Contract", async () => {
   const mintFee = ethers.parseEther("1");

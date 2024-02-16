@@ -3,6 +3,7 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
 
 contract LaunchpadERC721 is Ownable {
     event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
@@ -57,7 +58,7 @@ contract LaunchpadERC721 is Ownable {
         return _tokenURI;
     }
 
-    function _baseURI() internal view returns (string memory) {
+    function _baseURI() internal pure returns (string memory) {
         return "";
     }
 
@@ -127,6 +128,7 @@ contract LaunchpadERC721 is Ownable {
     }
 
     function _safeTransfer(address from, address to, uint256 tokenId, bytes memory data) internal {
+        console.log(string(data));
         _transfer(from, to, tokenId);
     }
 
