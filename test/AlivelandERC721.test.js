@@ -9,7 +9,7 @@ describe("Aliveland ERC-721 NFT Contract", async () => {
     const [owner, feeRecipient] = await ethers.getSigners();
 
     const AlivelandNFT = await ethers.deployContract(
-      "AlivelandERC721", 
+      "AlivelandERC721",
       [
         "Aliveland NFT",
         "ALNFT",
@@ -20,16 +20,16 @@ describe("Aliveland ERC-721 NFT Contract", async () => {
         owner
       ]
     );
-                                                                      
+
     return { AlivelandNFT, owner, feeRecipient };
   }
-  
+
   it("Should mint NFT successfully", async () => {
     const { AlivelandNFT, owner, feeRecipient } = await loadFixture(deployTokenFixture);
 
     expect(await AlivelandNFT.balanceOf(owner.address)).to.equal(0);
 
-   await AlivelandNFT.mint(owner.address, "test1", royalty, "nft1", { from: owner.address, value: mintFee });
+    await AlivelandNFT.mint(owner.address, "test1", royalty, "nft1", { from: owner.address, value: mintFee });
     expect(await AlivelandNFT.balanceOf(owner.address)).to.equal(1);
 
     await AlivelandNFT.mint(owner.address, "test2", royalty, "nft2", { from: owner.address, value: mintFee });
@@ -41,7 +41,7 @@ describe("Aliveland ERC-721 NFT Contract", async () => {
   it("Should burn NFT successfully", async () => {
     const { AlivelandNFT, owner } = await loadFixture(deployTokenFixture);
 
-   await AlivelandNFT.mint(owner.address, "test1", royalty, "nft1", { from: owner.address, value: mintFee });
+    await AlivelandNFT.mint(owner.address, "test1", royalty, "nft1", { from: owner.address, value: mintFee });
     await AlivelandNFT.mint(owner.address, "test2", royalty, "nft2", { from: owner.address, value: mintFee });
 
     expect(await AlivelandNFT.balanceOf(owner.address)).to.equal(2);

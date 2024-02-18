@@ -29,7 +29,7 @@ describe("Aliveland ERC-1155 NFT Contract", async () => {
 
     expect(await AlivelandNFT.balanceOf(owner.address, 1)).to.equal(0);
 
-    await AlivelandNFT.mint(owner.address, 3, new Uint8Array([]), "nft1", { from: owner.address, value: mintFee3 });
+    await AlivelandNFT.mint(owner.address, 3, "test1", "nft1", { from: owner.address, value: mintFee3 });
 
     expect(await AlivelandNFT.balanceOf(owner.address, 0)).to.equal(3);
   });
