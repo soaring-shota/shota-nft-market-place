@@ -288,8 +288,10 @@ contract AlivelandMarketplace is OwnableUpgradeable, ReentrancyGuardUpgradeable 
 
         uint256 price = listedItem.pricePerItem.mul(listedItem.quantity);
         uint256 feeAmount = price.mul(platformFee).div(1e3);
-        require(msg.sender.balance >= msg.value, "insufficient balance");
-        require(msg.value >= price, "please send the exact amount");
+        if (address(_payToken) == address(0x1010)) {
+            require(msg.sender.balance >= msg.value, "insufficient balance");
+            require(msg.value >= price, "please send the exact amount");
+        }
 
         _safeTransferFrom(_payToken, feeAmount, _msgSender(), feeReceipient);
 
