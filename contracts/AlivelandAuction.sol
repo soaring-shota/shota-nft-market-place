@@ -100,6 +100,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         uint256 indexed tokenId,
         address indexed bidder,
         address owner,
+        address payToken,
         uint256 bid
     );
 
@@ -245,7 +246,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         highestBid.bid = _bidAmount;
         highestBid.lastBidTime = _getNow();
 
-        emit BidPlaced(_nftAddress, _tokenId, _msgSender(), _owner, _bidAmount);
+        emit BidPlaced(_nftAddress, _tokenId, _msgSender(), _owner, auction.payToken, _bidAmount);
     }
 
     function withdrawBid(address _nftAddress, uint256 _tokenId)
