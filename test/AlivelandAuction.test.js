@@ -257,6 +257,7 @@ describe("Aliveland Auction Contract", () => {
                 firstTokenId,
                 bidder.address,
                 owner.address,
+                mockToken.target,
                 pricePerItem
             );
         });
