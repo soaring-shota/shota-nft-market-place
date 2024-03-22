@@ -43,32 +43,32 @@ async function main() {
 	const ALIVELAND_ADDRESS_REGISTRY = AlivelandAddressRegistryDeployed.target;
 	
   ///////////////////////////ERC721 Token Contract////////////////////////////
-  const AlivelandERC721 = await ethers.getContractFactory("AlivelandERC721");
-  const AlivelandERC721Deployed = await AlivelandERC721.deploy(
-    "Aliveland NFT",
-    "ALNFT",
-    BASE_URI,
-    "ipfs://metadata",
-    mintFee,
-    FEE_RECIPIENT,
-    DEPLOYER_ADDRESS
-  );
-  await AlivelandERC721Deployed.waitForDeployment();
-  console.log("deployed Aliveland NFT(erc-721) contract address: ", AlivelandERC721Deployed.target);
+  // const AlivelandERC721 = await ethers.getContractFactory("AlivelandERC721");
+  // const AlivelandERC721Deployed = await AlivelandERC721.deploy(
+  //   "Aliveland NFT",
+  //   "ALNFT",
+  //   BASE_URI,
+  //   "ipfs://metadata",
+  //   mintFee,
+  //   FEE_RECIPIENT,
+  //   DEPLOYER_ADDRESS
+  // );
+  // await AlivelandERC721Deployed.waitForDeployment();
+  // console.log("deployed Aliveland NFT(erc-721) contract address: ", AlivelandERC721Deployed.target);
 
   ///////////////////////////ERC1155 Token Contract////////////////////////////
-  const AlivelandERC1155 = await ethers.getContractFactory("AlivelandERC1155");
-  const AlivelandERC1155Deployed = await AlivelandERC1155.deploy(
-    "Aliveland NFT",
-    "ALNFT",
-    BASE_URI,
-    "ipfs://metadata",
-    mintFee,
-    FEE_RECIPIENT,
-    DEPLOYER_ADDRESS
-  );
-  await AlivelandERC1155Deployed.waitForDeployment();
-  console.log("deployed Aliveland NFT(erc-1155) contract address: ", AlivelandERC1155Deployed.target);
+  // const AlivelandERC1155 = await ethers.getContractFactory("AlivelandERC1155");
+  // const AlivelandERC1155Deployed = await AlivelandERC1155.deploy(
+  //   "Aliveland NFT",
+  //   "ALNFT",
+  //   BASE_URI,
+  //   "ipfs://metadata",
+  //   mintFee,
+  //   FEE_RECIPIENT,
+  //   DEPLOYER_ADDRESS
+  // );
+  // await AlivelandERC1155Deployed.waitForDeployment();
+  // console.log("deployed Aliveland NFT(erc-1155) contract address: ", AlivelandERC1155Deployed.target);
 
   ///////////////////////////ERC-721 Factory Contract////////////////////////////
   const AlivelandERC721Factory = await ethers.getContractFactory("AlivelandERC721Factory");
@@ -98,7 +98,7 @@ async function main() {
 	
 	await AlivelandAddressRegistryDeployed.updateAuction(AlivelandAuctionDeployed.target);
 	await AlivelandAddressRegistryDeployed.updateMarketplace(AlivelandMarketplaceDeployed.target);
-	await AlivelandAddressRegistryDeployed.updateERC721Factory(AlivelandERC721Deployed.target);
+	await AlivelandAddressRegistryDeployed.updateERC721Factory(AlivelandERC721FactoryDeployed.target);
 	await AlivelandAddressRegistryDeployed.updateERC1155Factory(AlivelandERC1155FactoryDeployed.target);
 	await AlivelandAddressRegistryDeployed.updateTokenRegistry(AlivelandTokenRegistryDeployed.target);
 }
