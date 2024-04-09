@@ -43,6 +43,7 @@ contract AlivelandAuction is Ownable, ReentrancyGuardUpgradeable {
         uint256 reservePrice;
         uint256 startTime;
         uint256 endTime;
+        
         bool resulted;
     }
 
