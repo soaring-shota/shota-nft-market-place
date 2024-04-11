@@ -1073,7 +1073,7 @@ contract AlivelandMarketplace is
         uint256 value,
         bytes calldata data
     ) external override returns (bytes4) {
-        this.onERC1155BatchReceived.selector;
+        return this.onERC1155BatchReceived.selector;
     }
 
     function onERC1155BatchReceived(
@@ -1083,7 +1083,7 @@ contract AlivelandMarketplace is
         uint256[] calldata values,
         bytes calldata data
     ) external override returns (bytes4) {
-        this.onERC1155BatchReceived.selector;
+        return this.onERC1155BatchReceived.selector;
     }
 
     function supportsInterface(

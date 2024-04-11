@@ -22,12 +22,12 @@ async function main() {
   console.log('Marketplace contract was initialized');
 
 	///////////////////////////Auction Contract////////////////////////////
-	const AlivelandAuction = await ethers.getContractFactory('AlivelandAuction');
-  const AlivelandAuctionDeployed = await AlivelandAuction.deploy();
-  await AlivelandAuctionDeployed.waitForDeployment();
-  console.log("deployed Aliveland auction contract address: ", AlivelandAuctionDeployed.target);
-  await AlivelandAuctionDeployed.initialize(FEE_RECIPIENT);
-  console.log('Auction contract was initialized');
+	// const AlivelandAuction = await ethers.getContractFactory('AlivelandAuction');
+  // const AlivelandAuctionDeployed = await AlivelandAuction.deploy();
+  // await AlivelandAuctionDeployed.waitForDeployment();
+  // console.log("deployed Aliveland auction contract address: ", AlivelandAuctionDeployed.target);
+  // await AlivelandAuctionDeployed.initialize(FEE_RECIPIENT);
+  // console.log('Auction contract was initialized');
 
 	///////////////////////////TokenRegistry Contract////////////////////////////
 	const AlivelandTokenRegistry = await ethers.getContractFactory('AlivelandTokenRegistry');
@@ -94,9 +94,9 @@ async function main() {
 
 	///////////////////////////Updating Contract Address////////////////////////////
 	await AlivelandMarketplaceDeployed.updateAddressRegistry(ALIVELAND_ADDRESS_REGISTRY);	
-	await AlivelandAuctionDeployed.updateAddressRegistry(ALIVELAND_ADDRESS_REGISTRY);
+	// await AlivelandAuctionDeployed.updateAddressRegistry(ALIVELAND_ADDRESS_REGISTRY);
 	
-	await AlivelandAddressRegistryDeployed.updateAuction(AlivelandAuctionDeployed.target);
+	// await AlivelandAddressRegistryDeployed.updateAuction(AlivelandAuctionDeployed.target);
 	await AlivelandAddressRegistryDeployed.updateMarketplace(AlivelandMarketplaceDeployed.target);
 	await AlivelandAddressRegistryDeployed.updateERC721Factory(AlivelandERC721FactoryDeployed.target);
 	await AlivelandAddressRegistryDeployed.updateERC1155Factory(AlivelandERC1155FactoryDeployed.target);
