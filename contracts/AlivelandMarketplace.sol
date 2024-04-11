@@ -48,8 +48,8 @@ contract AlivelandMarketplace is
     uint16 public platformFee;
     address payable public feeReceipient;
 
-    uint256 public minBidIncrement = 1;
-    uint256 public bidWithdrawalLockTime = 20 minutes;
+    uint256 public minBidIncrement;
+    uint256 public bidWithdrawalLockTime;
 
     // nft => tokenId => creator => list struct
     mapping(address => mapping(uint256 => mapping(address => Listing)))
@@ -189,6 +189,9 @@ contract AlivelandMarketplace is
 
         platformFee = _platformFee;
         feeReceipient = _feeRecipient;
+
+        minBidIncrement = 1;
+        bidWithdrawalLockTime = 20 minutes;
 
         __Ownable_init();
         __ReentrancyGuard_init();
@@ -390,10 +393,11 @@ contract AlivelandMarketplace is
             _deadline,
             false
         );
-
+        address _nftOwner = IERC721(_nftAddress).ownerOf(_tokenId);
         emit AlivelandMarketEvents.OfferCreated(
             _msgSender(),
             _nftAddress,
+            _nftOwner,
             _tokenId,
             address(_payToken),
             _pricePerItem,

@@ -39,6 +39,7 @@ library AlivelandMarketEvents {
     event OfferCreated(
         address indexed creator,
         address indexed nft,
+        address indexed owner,
         uint256 tokenId,
         address payToken,
         uint256 pricePerItem,
