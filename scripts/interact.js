@@ -7,6 +7,7 @@ const {
   COLLECTION_FEE,
   FACTORY721_ADDRESS,
   FACTORY1155_ADDRESS,
+  MARKETPLACE_ADDRESS,
 } = process.env;
 const { ethers } = require('hardhat');
 
@@ -38,14 +39,20 @@ async function main() {
     // console.log('xxxxxxxxxx', result);
 
   // const marketplaceFac = await ethers.getContractFactory("AlivelandMarketplace")
-  // const marketplaceContract = marketplaceFac.attach("0x271F7A1e6AF5176C1a08249505E08AB693b28296");
-  // const result = await marketplaceContract.addressRegistry();
+  // const marketplaceContract = marketplaceFac.attach("0x3c72726672133F10ff0Ed6ce2a74c2c684a7A541");
+  // const result = await marketplaceContract.owner();
+  // // const result = await marketplaceContract.updateAddressRegistry("0x9D51433fbBb6bC2A0D74B6A7188373fCb53c57d0");
   // console.log('xxxxxxxxxx', result);
 
-  const tokenRegistryFactory = await ethers.getContractFactory("AlivelandTokenRegistry");
-  const tokenRegistryContract = tokenRegistryFactory.attach("0x93BF31E2Ff7D9Ab66ED144f025b4CB42245112f9");
-  const result = await tokenRegistryContract.add("0x0000000000000000000000000000000000001010");
-  console.log('xxxx', result);
+  // const tokenRegistryFactory = await ethers.getContractFactory("AlivelandTokenRegistry");
+  // const tokenRegistryContract = tokenRegistryFactory.attach("0x93BF31E2Ff7D9Ab66ED144f025b4CB42245112f9");
+  // const result = await tokenRegistryContract.add("0x0000000000000000000000000000000000001010");
+  // console.log('xxxx', result);
+
+  const addressRegistryFactory = await ethers.getContractFactory("AlivelandAddressRegistry");
+  const addressRegistryContract = addressRegistryFactory.attach("0x9D51433fbBb6bC2A0D74B6A7188373fCb53c57d0");
+  const result = await addressRegistryContract.updateMarketplace(MARKETPLACE_ADDRESS);
+  console.log(result);
 }
 
 main().catch((error) => {

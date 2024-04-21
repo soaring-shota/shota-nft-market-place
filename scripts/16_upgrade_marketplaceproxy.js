@@ -3,6 +3,9 @@ const {
   MARKETPLACE_ADDRESS,
   MARKETPLACE_PROXY,
   PROXY_ADMIN,
+  ADDRESS_REGISTRY,
+  FEE_RECIPIENT,
+  PLATFORM_FEE, 
 } = process.env;
 const { ethers, upgrades } = require("hardhat");
 
@@ -11,6 +14,10 @@ async function main() {
   const AlivelandMarketplaceDeployed = await AlivelandMarketplace.deploy();
   await AlivelandMarketplaceDeployed.waitForDeployment();
   console.log("deployed Aliveland marketplace contract address: ", AlivelandMarketplaceDeployed.target);
+  
+  await AlivelandMarketplaceDeployed.initialize(FEE_RECIPIENT, PLATFORM_FEE);
+  await AlivelandMarketplaceDeployed.updateAddressRegistry(ADDRESS_REGISTRY);
+  console.log('Marketplace contract was initialized');
 
   // Get proxy admin contract instance
   const ProxyAdmin = await ethers.getContractFactory("ProxyAdmin");

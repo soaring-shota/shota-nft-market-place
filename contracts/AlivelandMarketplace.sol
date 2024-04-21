@@ -197,6 +197,26 @@ contract AlivelandMarketplace is
         __ReentrancyGuard_init();
     }
 
+    function getOwnerOfNft(address _nftAddress, uint256 _tokenId) public view returns(address) {
+        address _owner = address(0);
+        if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
+            IERC721 nft = IERC721(_nftAddress);
+            address owner = nft.ownerOf(_tokenId);
+            
+            _owner = owner;
+
+            if(owner == address(this)) {
+                _owner = listings[_nftAddress][_tokenId].seller;
+                if(_owner == address(0)) {
+                    _owner = auctions[_nftAddress][_tokenId].creator;
+                }
+            }
+
+        } 
+        
+        return _owner;
+    }
+
     function listItem(
         address _nftAddress,
         string memory _mediaType,
@@ -317,6 +337,25 @@ contract AlivelandMarketplace is
             revert("invalid nft address");
         }
 
+        // Cancel offer if there is an offer created by msgSender()
+        Offer storage offer = offers[_nftAddress][_tokenId][_msgSender()];
+        if (offer.offerer == _msgSender() && !offer.accepted) {
+            _safeTransferFrom(
+                address(offer.payToken),
+                offer.pricePerItem,
+                address(this),
+                _msgSender()
+            );
+
+            delete (offers[_nftAddress][_tokenId][_msgSender()]);
+            emit AlivelandMarketEvents.OfferCanceled(
+                _msgSender(),
+                _nftAddress,
+                _tokenId
+            );
+        }
+        ///////////////////////////////////////////////////////////
+        
         emit AlivelandMarketEvents.ItemSold(
             listedItem.seller,
             _msgSender(),
@@ -351,6 +390,11 @@ contract AlivelandMarketplace is
 
         _validPayToken(address(_payToken));
 
+        if (address(_payToken) == address(0x1010)) {
+            require(msg.sender.balance >= msg.value, "insufficient balance");
+            require(msg.value >= _pricePerItem, "please send the exact amount");
+        }
+
         _safeTransferFrom(
             address(_payToken),
             _pricePerItem,
@@ -365,7 +409,9 @@ contract AlivelandMarketplace is
             _deadline,
             false
         );
-        address _nftOwner = IERC721(_nftAddress).ownerOf(_tokenId);
+
+        address _nftOwner = getOwnerOfNft(_nftAddress, _tokenId);
+
         emit AlivelandMarketEvents.OfferCreated(
             _msgSender(),
             _nftAddress,
@@ -402,6 +448,9 @@ contract AlivelandMarketplace is
         uint256 _tokenId,
         address _creator
     ) external nonReentrant offerExists(_nftAddress, _tokenId, _creator) {
+        Auction memory auction = auctions[_nftAddress][_tokenId];
+        require(auction.creator == address(0), "nft is in auction");
+
         Offer storage offer = offers[_nftAddress][_tokenId][_creator];
 
         _validOwner(_nftAddress, _tokenId, _msgSender(), 1);
@@ -912,7 +961,7 @@ contract AlivelandMarketplace is
     ) internal view {
         if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
             IERC721 nft = IERC721(_nftAddress);
-            require(nft.ownerOf(_tokenId) == _owner, "not owning item");
+            require(getOwnerOfNft(_nftAddress, _tokenId) == _owner, "not owning item");
         } else {
             revert("invalid nft address");
         }
@@ -1011,26 +1060,6 @@ contract AlivelandMarketplace is
         require(token.transfer(_msgSender(), balance), "Transfer failed");
     }
 
-    function getOwnerOfNft(address _nftAddress, uint256 _tokenId) external view returns(address) {
-        address _owner = address(0);
-        if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
-            IERC721 nft = IERC721(_nftAddress);
-            address owner = nft.ownerOf(_tokenId);
-            
-            _owner = owner;
-
-            if(owner == address(this)) {
-                _owner = listings[_nftAddress][_tokenId].seller;
-                if(_owner == address(0)) {
-                    _owner = auctions[_nftAddress][_tokenId].creator;
-                }
-            }
-
-        } 
-        
-        return _owner;
-    }
-
     function onERC721Received(
         address operator,
         address from,
@@ -1065,4 +1094,6 @@ contract AlivelandMarketplace is
     ) external view override returns (bool) {
         return false;
     }
+
+    receive() external payable {}
 }
