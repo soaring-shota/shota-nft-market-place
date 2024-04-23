@@ -16,9 +16,10 @@ async function main() {
   console.log("deployed Aliveland marketplace contract address: ", AlivelandMarketplaceDeployed.target);
   
   await AlivelandMarketplaceDeployed.initialize(FEE_RECIPIENT, PLATFORM_FEE);
-  await AlivelandMarketplaceDeployed.updateAddressRegistry(ADDRESS_REGISTRY);
   console.log('Marketplace contract was initialized');
 
+  await AlivelandMarketplaceDeployed.updateAddressRegistry(ADDRESS_REGISTRY);
+  console.log('Address registry changed');
   // Get proxy admin contract instance
   const ProxyAdmin = await ethers.getContractFactory("ProxyAdmin");
   const proxyAdmin = ProxyAdmin.attach(PROXY_ADMIN);

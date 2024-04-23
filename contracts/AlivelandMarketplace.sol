@@ -492,7 +492,12 @@ contract AlivelandMarketplace is
             _msgSender()
         );
 
-        IERC721(_nftAddress).safeTransferFrom(_msgSender(), _creator, _tokenId);
+        Listing memory listing = listings[_nftAddress][_tokenId];
+        if (listing.seller != address(0)) {
+            IERC721(_nftAddress).safeTransferFrom(address(this), _creator, _tokenId);
+        } else {
+            IERC721(_nftAddress).safeTransferFrom(_msgSender(), _creator, _tokenId);
+        }
 
         offer.accepted = true;
 
@@ -610,6 +615,12 @@ contract AlivelandMarketplace is
                 auction.highestBid
             );
         }
+
+        IERC721(_nftAddress).safeTransferFrom(
+            address(this),
+            _msgSender(),
+            _tokenId
+        );
 
         delete auctions[_nftAddress][_tokenId];
 
@@ -960,7 +971,6 @@ contract AlivelandMarketplace is
         uint256 quantity
     ) internal view {
         if (IERC165(_nftAddress).supportsInterface(INTERFACE_ID_ERC721)) {
-            IERC721 nft = IERC721(_nftAddress);
             require(getOwnerOfNft(_nftAddress, _tokenId) == _owner, "not owning item");
         } else {
             revert("invalid nft address");
