@@ -706,7 +706,7 @@ contract AlivelandMarketplace is
         address _nftAddress,
         uint256 _tokenId,
         uint256 _bidAmount
-    ) external payable nonReentrant isAuction(_nftAddress, _tokenId) {
+    ) external payable nonReentrant isAuction(_nftAddress, _tokenId) offerNotExists(_nftAddress, _tokenId, _msgSender()) {
         require(tx.origin == _msgSender(), "no contracts permitted");
 
         Auction storage auction = auctions[_nftAddress][_tokenId];
