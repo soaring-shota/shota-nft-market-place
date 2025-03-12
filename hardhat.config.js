@@ -3,10 +3,12 @@ require('dotenv').config();
 require("@nomicfoundation/hardhat-toolbox");
 require("@nomicfoundation/hardhat-chai-matchers");
 require("@nomiclabs/hardhat-truffle4");
+require('@openzeppelin/hardhat-upgrades');
 
 const { 
   POLYGON_API_URL, 
   MUMBAI_API_URL, 
+  AMOY_API_URL,
   METAMASK_PRIVATE_KEY,
   POLYGONSCAN_API_KEY
 } = process.env;
@@ -36,9 +38,14 @@ module.exports = {
       url: MUMBAI_API_URL,
       chainId: 80001,
       accounts: [`0x${METAMASK_PRIVATE_KEY}`]
+    },
+    amoy: {
+      url: AMOY_API_URL,
+      chainId: 80002,
+      accounts: [`0x${METAMASK_PRIVATE_KEY}`]
     }
   },
   etherscan: {
-    apiKey: POLYGONSCAN_API_KEY
-  },
+    apiKey: POLYGONSCAN_API_KEY,
+  }
 };

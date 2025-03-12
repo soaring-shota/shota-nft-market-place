@@ -8,6 +8,7 @@ on:
 env:
   METAMASK_PRIVATE_KEY: ${{ secrets.METAMASK_PRIVATE_KEY }}
   MUMBAI_API_URL: ${{ secrets.MUMBAI_API_URL }}
+  AMOY_API_URL: ${{ secrets.AMOY_API_URL }}
   POLYGON_API_URL: ${{ secrets.POLYGON_API_URL }}
 
 jobs:

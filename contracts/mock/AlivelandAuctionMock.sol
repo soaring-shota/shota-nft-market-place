@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.19;
 
-import "../AlivelandAuction.sol";
+import "../AlivelandMarketplace.sol";
 
-contract AlivelandAuctionMock is AlivelandAuction {
+contract AlivelandAuctionMock is AlivelandMarketplace {
     uint256 public nowOverride;
 
     function setNowOverride(uint256 _now) external {

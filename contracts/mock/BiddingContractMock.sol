@@ -2,16 +2,16 @@
 
 pragma solidity ^0.8.19;
 
-import "../AlivelandAuction.sol";
+import "../AlivelandMarketplace.sol";
 
 contract BiddingContractMock {
-    AlivelandAuction public auctionContract;
+    AlivelandMarketplace public auctionContract;
 
-    constructor(AlivelandAuction _auctionContract) {
+    constructor(AlivelandMarketplace _auctionContract) {
         auctionContract = _auctionContract;
     }
 
     function bid(address _nftAddress, uint256 _tokenId, address _owner, uint256 _bidAmount) external {
-        auctionContract.placeBid(_nftAddress, _tokenId, _owner, _bidAmount);
+        auctionContract.placeBid(_nftAddress, _tokenId, _bidAmount);
     }
 }
